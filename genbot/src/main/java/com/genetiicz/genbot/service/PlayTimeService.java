@@ -57,14 +57,16 @@ public class PlayTimeService {
         long durationMillis = endTime - startTime;
         long durationMinutes= durationMillis / 60000;
 
-        if(durationMinutes < 1) {
-            System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
-            return;
-        }
+        //We want to track at least one minute over since launching the game is not actually playing.
+        //if(durationMinutes < 1) {
+          //  System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
+          //  return;
+        //}
         System.out.println("SESSION END: User " + userId + " played " + gameName + " for " + durationMinutes + " minutes. Updating database.");
         Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameName(userId, gameName);
 
-        // Save the record.
+        // Save the record and present it as a new totalTime when playing
+        // the same game again, so this will add the current minutes to it.
         recordOpt.ifPresent(record -> {
             long newTotalTime = record.getTotalMinutesPlayed() + durationMinutes;
             record.setTotalMinutesPlayed(newTotalTime);

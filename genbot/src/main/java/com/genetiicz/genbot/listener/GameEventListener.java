@@ -23,14 +23,16 @@ public class GameEventListener extends ListenerAdapter {
     @Override
     public void onGenericEvent(@NotNull GenericEvent event) {
         System.out.println("EVENT RECEIVED: " + event.getClass().getSimpleName());
+        if(event instanceof UserUpdateActivitiesEvent) {
+            System.out.println("Detected UserUpdateActivites via OnGenericEVENT!!!!");
+        }
     }
 
-
-
-    //Controller "listens" for start activity
+    //Listener "listens" for start activity
     @Override
     public void onUserUpdateActivities(@NotNull UserUpdateActivitiesEvent event) {
-        System.out.println("onUserUpdatemethod Activated");
+        //Just to check if the method gets used at all
+        System.out.println("onUserUpdateActivities Activated");
        if (event.getUser().isBot()) return; //Ignore bots
 
         //Get userId & serverName
@@ -38,27 +40,31 @@ public class GameEventListener extends ListenerAdapter {
         String serverId = event.getGuild().getId();
         String serverName = event.getGuild().getName();
 
-        //Get new activity (Detect game start)
-        List<Activity> oldActivities = event.getOldValue();
-        List<Activity> newActivities = event.getNewValue();
+        //Get activity on the user on the specific game they are playing, if it is null then the
+        //user won't get any values since they do not exist, and if they do exist we get values and
+        //then detect for game start and game stopped.
+        //But if there are no activities from records,we assign an empty list so the loop doesn't crash
+        //since the user is maybe starting a new game activity from start with no records.
+        List<Activity> oldActivities = event.getOldValue() != null ? event.getOldValue() : List.of();
+        List<Activity> newActivities = event.getNewValue() != null ? event.getNewValue() : List.of();
 
 
-        //Check if the activity is a game so we track correctly
-        for(Activity newActivity : newActivities) {
-        if (newActivity.getType() == Activity.ActivityType.PLAYING && oldActivities.stream().noneMatch(a -> a.getName().equals(newActivity.getName())))
-            //printing out system line for detecting the game for user in console
-            System.out.println("Game Detected: User " + userId + "Started playing " + newActivity.getName());
-        playTimeService.handleActivityStart(userId,serverId,serverName, newActivity.getName());
+        //Start Game Activity detection
+        for(Activity activity : newActivities) {
+            if (activity.getType() == Activity.ActivityType.PLAYING &&
+            oldActivities.stream().noneMatch(a ->a.getName().equals(activity.getName()))) {
+                System.out.println("Game detected for: " + userId + " started playing " + activity.getName());
+                playTimeService.handleActivityStart(userId,serverId,serverName,activity.getName());
+            }
         }
 
-        //Detect when the user is quitting game
-        for(Activity oldActivity : oldActivities) {
-           if (oldActivity.getType() == Activity.ActivityType.PLAYING && newActivities.stream().noneMatch(a -> a.getName().equals(oldActivity.getName())))
-           //Print out system line so i can see if it is detecting
-               System.out.println("Detected game stop: " + oldActivity.getName());
-           playTimeService.handleActivityEnd(userId,serverId,serverName,oldActivity.getName());
+        //End Game Activity detection
+        for(Activity activity : oldActivities) {
+            if(activity.getType() == Activity.ActivityType.PLAYING &&
+            newActivities.stream().noneMatch(a -> a.getName().equals(activity.getName()))) {
+                System.out.println("Game stopped for: " + userId + " stopped playing " + activity.getName());
+                playTimeService.handleActivityEnd(userId,serverId,serverName, activity.getName());
+            }
         }
     }
-
-
 }
