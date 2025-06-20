@@ -89,12 +89,11 @@ public class PlayTimeService {
     }
     public Optional<Long> getTotalMinutesIncludingLive(String userId, String gameName) {
         long liveMinutes = getLiveMinutes(userId, gameName);
-        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndGameName(userId, gameName);
+        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName);
 
         if (record.isPresent()) {
             return Optional.of(record.get().getTotalMinutesPlayed() + liveMinutes);
         } else if (liveMinutes > 0) {
-            // They're playing now but no record exists yet
             return Optional.of(liveMinutes);
         } else {
             return Optional.empty();

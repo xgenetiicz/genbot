@@ -1,5 +1,6 @@
 package com.genetiicz.genbot.listener;
 
+import com.genetiicz.genbot.service.PlayTimeService;
 import com.genetiicz.genbot.service.SlashService;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
@@ -14,12 +15,14 @@ import java.util.List;
 @Component
 public class SlashCommandListener extends ListenerAdapter {
     private final SlashService slashService;
+    private final PlayTimeService playTimeService;
 
     //Constructor, by this can we access the PlaytimeData so we can retrieve
     // But we are not storing any data with slashcommands, just retrieving.
     @Autowired
-    public SlashCommandListener(SlashService slashService) {
+    public SlashCommandListener(SlashService slashService, PlayTimeService playTimeService) {
         this.slashService = slashService;
+        this.playTimeService = playTimeService;
     }
 
     @Override
@@ -54,14 +57,26 @@ public class SlashCommandListener extends ListenerAdapter {
                     return;
                 }
                 //Service that provide the output after using /playtime present
-                slashService.findTopByUserIdAndGameNameIgnoreCaseOrderByUpdatedAtDesc(userId,gameName).ifPresentOrElse(
-                        PlayTimeEntity -> event.reply("You have played " + gameName + " in total for " + PlayTimeEntity.getTotalMinutesPlayed() + " minutes.").queue(),
-                        () -> event.reply("No playtime record found for: " + gameName +".").queue()
-                );
+                playTimeService.getTotalMinutesIncludingLive(userId,gameName).ifPresentOrElse(totalMinutes -> {
+                    long hours = totalMinutes / 60;
+                    long minutes = totalMinutes % 60;
+                    //Need to convert /playtime time visual in 00h and 00m format. Hours and minutes
+                    StringBuilder timeBuilder = new StringBuilder();
+                    if (hours > 0) {
+                        timeBuilder.append(hours).append(" hour").append(hours == 1 ? "" : "s");
+                    }
+                    if (hours > 0 && minutes > 0){
+                        timeBuilder.append(" and ");
+                    }
+                    if (minutes > 0 || hours > 0) {
+                        timeBuilder.append(minutes).append(" minute").append(minutes == 1 ? "" : "s");
+                    }
+                    event.reply("You have played **" + gameName + "** for a total of **" + timeBuilder + "**.").queue();
+                }, () -> event.reply("No playtime record found for: **" + gameName + "**.").queue());
                 break;
 
-            default:
-                event.reply("Unknown command, the correct command is: /playtime").queue();
+                default:
+                    event.reply("Unknown command, the correct command is: `/playtime`").queue();
         }
     }
 }
