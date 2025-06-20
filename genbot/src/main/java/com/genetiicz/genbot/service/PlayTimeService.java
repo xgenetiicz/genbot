@@ -3,8 +3,10 @@ package com.genetiicz.genbot.service;
 import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import com.genetiicz.genbot.database.repository.PlayTimeRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,31 +46,90 @@ public class PlayTimeService {
         }
         //Now we start the sessionTimer for trackings the User's
         //Activity on game
-        activePlaySessions.put(userId,System.currentTimeMillis());
+        String sessionKey = userId + ":" + gameName;
+        activePlaySessions.put(sessionKey,System.currentTimeMillis());
         System.out.println("Session start: User " + userId + " started playing " + gameName);
     }
     //Method to track end of playtime for the user
     public void handleActivityEnd(String userId, String serverId, String serverName, String gameName) {
-        if(!activePlaySessions.containsKey(userId)) {
+        //Adding key with value pair that hold userId and gameName, on start and end.
+        String sessionKey = userId + ":" + gameName;
+        if(!activePlaySessions.containsKey(sessionKey)) {
             return;
         }
-        long startTime = activePlaySessions.remove(userId);
+        long startTime = activePlaySessions.remove(sessionKey);
         long endTime = System.currentTimeMillis();
         long durationMillis = endTime - startTime;
         long durationMinutes= durationMillis / 60000;
 
-        if(durationMinutes < 1) {
-            System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
-            return;
-        }
+        //We want to track at least one minute over since launching the game is not actually playing.
+        //if(durationMinutes < 1) {
+          //  System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
+          //  return;
+        //}
         System.out.println("SESSION END: User " + userId + " played " + gameName + " for " + durationMinutes + " minutes. Updating database.");
         Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameName(userId, gameName);
 
-        // Save the record.
+        // Save the record and present it as a new totalTime when playing
+        // the same game again, so this will add the current minutes to it.
         recordOpt.ifPresent(record -> {
             long newTotalTime = record.getTotalMinutesPlayed() + durationMinutes;
             record.setTotalMinutesPlayed(newTotalTime);
             playTimeRepository.save(record);
         });
     }
+
+    public long getLiveMinutes(String userId, String gameName) {
+        String key = userId + ":" + gameName;
+        Long starTime = activePlaySessions.get(key);
+        if(starTime == null) {
+            return 0;
+        }
+        return (System.currentTimeMillis() - starTime) / 60000;
+    }
+    public Optional<Long> getTotalMinutesIncludingLive(String userId, String gameName) {
+        long liveMinutes = getLiveMinutes(userId, gameName);
+        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName);
+
+        if (record.isPresent()) {
+            return Optional.of(record.get().getTotalMinutesPlayed() + liveMinutes);
+        } else if (liveMinutes > 0) {
+            return Optional.of(liveMinutes);
+        } else {
+            return Optional.empty();
+        }
+    }
+
+    @Scheduled(fixedRate = 60000) // runs every 60 seconds
+    public void flushActivePlaySessions() {
+        long now = System.currentTimeMillis();
+
+        for (Map.Entry<String, Long> entry : activePlaySessions.entrySet()) {
+            String key = entry.getKey(); // format: userId:gameName
+            long startTime = entry.getValue();
+            long minutesPlayed = (now - startTime) / 60000;
+
+            if (minutesPlayed > 0) {
+                String[] parts = key.split(":");
+                if (parts.length < 2) {
+                    System.out.println("Invalid session key: " + key);
+                    continue;
+                }
+
+                String userId = parts[0];
+                String gameName = parts[1];
+
+                Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameName(userId, gameName);
+                recordOpt.ifPresent(record -> {
+                    record.setTotalMinutesPlayed(record.getTotalMinutesPlayed() + minutesPlayed);
+                    playTimeRepository.save(record);
+                    System.out.println("Flushed " + minutesPlayed + " minutes for " + userId + " on " + gameName);
+                });
+
+                // Reset the session start time to now
+                activePlaySessions.put(key, now);
+            }
+        }
+    }
+
 }

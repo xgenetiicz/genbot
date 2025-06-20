@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.springframework.data.annotation.LastModifiedDate;
 
 //Lombok annotations
 @Getter
@@ -30,5 +31,11 @@ public class PlayTimeEntity {
     @Column(nullable = false)
     private String gameName;
 
+    @Column(nullable = false)
     private long totalMinutesPlayed;
+
+    //Timestamp for when the record was last updated
+    @Column
+    @LastModifiedDate
+    private java.time.Instant updatedAt;
 }
