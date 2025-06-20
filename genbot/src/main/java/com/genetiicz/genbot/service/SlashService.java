@@ -21,6 +21,10 @@ public class SlashService {
         return slashRepository.findByUserIdAndGameName(userId,gameName);
     }
 
+    public Optional<PlayTimeEntity> findTopByUserIdAndGameNameIgnoreCaseOrderByUpdatedAtDesc(String userId, String gameName) {
+        return slashRepository.findTopByUserIdAndGameNameIgnoreCaseOrderByUpdatedAtDesc(userId, gameName);
+    }
+
     //public List<PlayTimeEntity>findTop5ByGameNameAndServerIdOrderByTotalMinutesPlayedDesc(String serverId, String gameName) {
      //   return slashRepository.findTop5ByGameNameAndServerIdOrderByTotalMinutesPlayedDesc(serverId, gameName);
    // }

@@ -2,6 +2,7 @@ package com.genetiicz.genbot.commands;
 
 import jakarta.annotation.PostConstruct;
 import net.dv8tion.jda.api.JDA;
+import net.dv8tion.jda.api.interactions.commands.OptionType;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import org.springframework.stereotype.Component;
 
@@ -19,6 +20,7 @@ public class SlashCommandRegister {
     public void registerSlashCommand () {
         jda.updateCommands().addCommands(
                 Commands.slash("playtime", "See how long you have been playing the game.")
+                        .addOption(OptionType.STRING, "game", "name of the game", false)
            //   Commands.slash("playtimetop5", "See top 5 most active players in this game.")
         ).queue();
 

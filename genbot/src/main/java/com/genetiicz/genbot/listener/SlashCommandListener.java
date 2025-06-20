@@ -24,7 +24,6 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @Override
     public void onSlashCommandInteraction (@NotNull SlashCommandInteractionEvent event) {
-
         //Need to check if it prints the actual command.
         System.out.println("Slash command " + event.getName());
         String command = event.getName();
@@ -39,17 +38,24 @@ public class SlashCommandListener extends ListenerAdapter {
                     event.reply("Unable to retrieve your current game.").queue();
                     return;
                 }
-                List<Activity> activities = event.getMember().getActivities();
 
-                String gameName = activities.stream()
-                        .filter(activity -> activity.getType() == Activity.ActivityType.PLAYING)
-                        .findFirst().map(Activity::getName).orElse(null);
+                //Handling user typed gamename so they can retrieve their records
+                String gameName;
+                if(event.getOption("game")!= null) {
+                    gameName = event.getOption("game").getAsString();
+                } else {
+                    List<Activity> activities = event.getMember().getActivities();
+                    gameName = activities.stream().filter(activity -> activity.getType() == Activity.ActivityType.PLAYING)
+                            .findFirst().map(Activity::getName).orElse(null);
+                }
+
                 if(gameName == null) {
-                    event.reply("You're not playing any game currently.").queue();
+                    event.reply("You're not playing any game currently and you didn't specify one.").queue();
                     return;
                 }
-                slashService.findByUserIdAndGameName(userId,gameName).ifPresentOrElse(
-                        PlayTimeEntity -> event.reply("You have played " + gameName + " for " +PlayTimeEntity.getTotalMinutesPlayed() + " minutes!").queue(),
+                //Service that provide the output after using /playtime present
+                slashService.findTopByUserIdAndGameNameIgnoreCaseOrderByUpdatedAtDesc(userId,gameName).ifPresentOrElse(
+                        PlayTimeEntity -> event.reply("You have played " + gameName + " in total for " + PlayTimeEntity.getTotalMinutesPlayed() + " minutes.").queue(),
                         () -> event.reply("No playtime record found for: " + gameName +".").queue()
                 );
                 break;

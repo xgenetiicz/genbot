@@ -23,6 +23,8 @@ public class PlayTimeService {
 
     //Method to track playtime by handling activity start and end.
     public void handleActivityStart(String userId, String serverId, String serverName, String gameName) {
+        //We trim the game name to lowercase so the user output from the slash command is printed correctly
+        gameName = gameName.trim().toLowerCase();
         //Use the repository first to check if user have already record.
         Optional<PlayTimeEntity> existingRecordOpt = playTimeRepository.findByUserIdAndGameName(userId,gameName);
         //Check if user already have a record
@@ -49,6 +51,8 @@ public class PlayTimeService {
     }
     //Method to track end of playtime for the user
     public void handleActivityEnd(String userId, String serverId, String serverName, String gameName) {
+        //same here
+        gameName = gameName.trim().toLowerCase();
         if(!activePlaySessions.containsKey(userId)) {
             return;
         }
