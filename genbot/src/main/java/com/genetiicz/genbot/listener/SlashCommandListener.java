@@ -50,7 +50,7 @@ public class SlashCommandListener extends ListenerAdapter {
                 }
 
                 if(gameName == null) {
-                    event.reply("You're not playing any game currently and you didn't specify one.").queue();
+                    event.reply("You're not currently playing any game, start the game to keep track! :D").queue();
                     return;
                 }
                 //Service that provide the output after using /playtime present
