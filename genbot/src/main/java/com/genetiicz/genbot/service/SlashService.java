@@ -21,6 +21,26 @@ public class SlashService {
         this.playTimeService = playTimeService;
     }
 
+    //Make a private helper method that convert all total minutes into
+    //hours and minutes, I need this since I want to re-use it on several
+    //methods, and need to access this within this class.
+     //Creating the "timebuilder" String builder class again.
+    private String formatPlayTime (long totalMinutes) {
+        long hours = totalMinutes / 60;
+        long minutes = totalMinutes % 60;
+
+        StringBuilder stringBuilder = new StringBuilder();
+        if (hours > 0) {
+            stringBuilder.append(hours).append(" hour").append(hours == 1 ? "" : "s");
+        }
+        if (hours > 0 && minutes > 0) {
+            stringBuilder.append(" & ");
+        }
+        if (minutes > 0 || hours == 0) {
+            stringBuilder.append(minutes).append(" minute").append(minutes == 1 ? "" : "s");
+        }
+        return stringBuilder.toString();
+    }
     public void replyWithPlaytime(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
         String gameName = null;
@@ -53,22 +73,7 @@ public class SlashService {
         Optional<Long> totalMinutesOpt = playTimeService.getTotalMinutesIncludingLive(userId, gameName);
         if (totalMinutesOpt.isPresent()) {
             long totalMinutes = totalMinutesOpt.get();
-            long hours = totalMinutes / 60;
-            long minutes = totalMinutes % 60;
-
-            String message = "You have played **" + gameName + "** for a total of **";
-
-            if (hours > 0) {
-                message += hours + " hour" + (hours == 1 ? "" : "s");
-            }
-            if (hours > 0 && minutes > 0) {
-                message += " and ";
-            }
-            if (minutes > 0 || hours == 0) {
-                message += minutes + " minute" + (minutes == 1 ? "" : "s");
-            }
-
-            message += "**.";
+            String message = "You have played **" + gameName + "** for a total of **" + formatPlayTime(totalMinutes);
             event.reply(message).queue();
         } else {
             event.reply("No playtime record found for: **" + gameName + "**.").queue();
@@ -105,8 +110,9 @@ public class SlashService {
             PlayTimeEntity entry = topPlayers.get(i);
             //Medals for the places 1,2,3.
             String medal = i < medals.length ? medals [i] : "`#`" + (i + 1);
-            leaderboard.append(medal).append("<@").append(entry.getUserId()).append(">")
-                    .append(": ").append(entry.getTotalMinutesPlayed()).append(" minutes\n");
+            leaderboard.append(medal).append("**<@").append(entry.getUserId()).append(">") //Retrieve userId here with <@append.getUser>
+                                                                                            //This is how Discord find userName
+                    .append(": ").append(formatPlayTime(entry.getTotalMinutesPlayed())).append("**\n");
         }
         //EmbedBuilder for setting leaderboard
         EmbedBuilder embedBuilder = new EmbedBuilder();
@@ -115,7 +121,6 @@ public class SlashService {
         embedBuilder.setDescription(leaderboard.toString());
         //Vertical color change on the embedBuilder.
         embedBuilder.setColor(new Color(0,0,0));
-
         event.replyEmbeds(embedBuilder.build()).queue();
     }
 }
