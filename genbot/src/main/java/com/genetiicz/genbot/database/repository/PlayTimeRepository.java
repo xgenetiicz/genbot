@@ -11,6 +11,6 @@ import java.util.Optional;
 @Repository
 public interface PlayTimeRepository extends JpaRepository<PlayTimeEntity,Long> {
     Optional<PlayTimeEntity> findByUserIdAndGameName(String userId,String gameName);
-
     Optional<PlayTimeEntity> findByUserIdAndGameNameIgnoreCase(String userId, String gameName);
+    List<PlayTimeEntity> findTop3ByGameNameIgnoreCaseAndServerIdOrderByTotalMinutesPlayedDesc(String gameName, String serverId);
 }

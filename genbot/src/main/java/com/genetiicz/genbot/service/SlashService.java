@@ -1,13 +1,13 @@
 package com.genetiicz.genbot.service;
 
-import com.genetiicz.genbot.service.PlayTimeService;
-import com.genetiicz.genbot.service.SlashService;
+import com.genetiicz.genbot.database.entity.PlayTimeEntity;
+import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.interactions.commands.OptionType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.awt.*;
 import java.util.List;
 import java.util.Optional;
 
@@ -75,7 +75,47 @@ public class SlashService {
         }
     }
     // Method and Logic to implement Top 5 players in a single game
-    public void replyWithTop3 (SlashCommandInteractionEvent event) {
+    public void replyWithPlaytimeTop3 (SlashCommandInteractionEvent event) {
         String gameName = null;
+        if (event.getOption("game") != null) {
+            //getting the gameName they are playing as an String
+            gameName = event.getOption("game").getAsString().trim(); //trim for no spaces
+
+        }
+        if(gameName == null || gameName.isBlank()) {
+            event.reply("Please provide a game name using `/playtimeTop3 -> Game:<Game>`").queue();
+            return;
+        }
+        if (event.getGuild() == null) {
+            event.reply("This command must be used in a server").queue();
+            return;
+        }
+        //Need the serverId so we can get guild, and guildmembers with their id.
+        String serverId = event.getGuild().getId();
+        List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(gameName,serverId);
+        //If statement to check if the guild has any playtime data on that game.
+        if(topPlayers.isEmpty()) {
+            event.reply("No playtime record found for **" + gameName + "** in this server.").queue();
+            return;
+        }
+        //StringBuilder for leaderboard
+        StringBuilder leaderboard = new StringBuilder();
+        String[] medals = {"\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"};
+        for (int i = 0; i < topPlayers.size(); i++){
+            PlayTimeEntity entry = topPlayers.get(i);
+            //Medals for the places 1,2,3.
+            String medal = i < medals.length ? medals [i] : "`#`" + (i + 1);
+            leaderboard.append(medal).append("<@").append(entry.getUserId()).append(">")
+                    .append(": ").append(entry.getTotalMinutesPlayed()).append(" minutes\n");
+        }
+        //EmbedBuilder for setting leaderboard
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + gameName);
+
+        embedBuilder.setDescription(leaderboard.toString());
+        //Vertical color change on the embedBuilder.
+        embedBuilder.setColor(new Color(0,0,0));
+
+        event.replyEmbeds(embedBuilder.build()).queue();
     }
 }

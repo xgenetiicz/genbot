@@ -14,5 +14,4 @@ import java.util.Optional;
 public interface SlashRepository extends JpaRepository<PlayTimeEntity,Long> {
     Optional<PlayTimeEntity> findByUserIdAndGameName (String userId,String gameName);
     Optional<PlayTimeEntity> findTopByUserIdAndGameNameIgnoreCase (String userId, String gameName);
-    List<PlayTimeEntity> findTop5ByGameNameAndServerIdOrderByTotalMinutesPlayedDesc(String gameName, String serverId);
 }

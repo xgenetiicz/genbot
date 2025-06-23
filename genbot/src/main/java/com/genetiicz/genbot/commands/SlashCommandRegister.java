@@ -20,11 +20,11 @@ public class SlashCommandRegister {
     public void registerSlashCommand () {
         jda.updateCommands().addCommands(
                 Commands.slash("playtime", "See how long you have been playing the game.")
-                        .addOption(OptionType.STRING, "Game", "name of the game", false),
-                 Commands.slash("playtimetop5", "See top 5 most active players in this game.")
-                         .addOption(OptionType.STRING, "Game", "Name of the game", true)
+                        .addOption(OptionType.STRING, "game", "Name of the game", false),
+                 Commands.slash("playtimetop3", "See top 3 most active players in this game.")
+                         .addOption(OptionType.STRING, "game", "Name of the game", true)
         ).queue();
 
-        System.out.println("Slash commands 'playtime' is registered!");
+        System.out.println("Slash commands 'playtime' and 'playtimetop 'is registered!");
     }
 }

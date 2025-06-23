@@ -28,7 +28,7 @@ public class SlashCommandListener extends ListenerAdapter {
         handlers.put("playtime", slashService::replyWithPlaytime);
         //here we can add more handlers.put for several commands for the bot.
         //Since this worked, now we implement Top5 command inside the handler
-       // handlers.put("playtimeTop5", slashService::replyWithPlaytimeTop5);
+        handlers.put("playtimetop3", slashService::replyWithPlaytimeTop3);
     }
 
     @Override

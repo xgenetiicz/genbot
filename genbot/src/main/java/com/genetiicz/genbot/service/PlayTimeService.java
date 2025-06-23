@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
@@ -131,5 +131,7 @@ public class PlayTimeService {
             }
         }
     }
-
+    public List<PlayTimeEntity> get3TopPlayersForGame(String gameName, String serverId) {
+        return playTimeRepository.findTop3ByGameNameIgnoreCaseAndServerIdOrderByTotalMinutesPlayedDesc(gameName, serverId);
+    }
 }
