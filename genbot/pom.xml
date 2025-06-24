@@ -61,12 +61,20 @@
 			<groupId>net.dv8tion</groupId>
 			<artifactId>JDA</artifactId>
 			<version>5.0.0-beta.21</version>
+			<!-- Need especially version 5.0.0.0 beta-21 if Discord is going to listen to game activity.-->
 		</dependency>
 
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
+		</dependency>
+
+		<!-- Need to use Apache Commons Text for bestMatch-->
+		<dependency>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-text</artifactId>
+			<version>1.10.0</version>
 		</dependency>
 
 	</dependencies>

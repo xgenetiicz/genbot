@@ -2,6 +2,7 @@ package com.genetiicz.genbot.service;
 
 import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import com.genetiicz.genbot.database.repository.PlayTimeRepository;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -133,5 +134,32 @@ public class PlayTimeService {
     }
     public List<PlayTimeEntity> get3TopPlayersForGame(String gameName, String serverId) {
         return playTimeRepository.findTop3ByGameNameIgnoreCaseAndServerIdOrderByTotalMinutesPlayedDesc(gameName, serverId);
+    }
+
+    //Method for getting the closest searching query on correct game
+    private String findClosestMatch(String input, List<String> candidates) {
+        LevenshteinDistance distance = new LevenshteinDistance();
+        String bestMatch = null;
+        int minDistance = Integer.MAX_VALUE;
+
+        //for loop to check all candidates of matches
+        for(String candidate : candidates) {
+            int dist = distance.apply(input.toLowerCase(), candidate.toLowerCase());
+            if(dist < minDistance) {
+                minDistance = dist;
+                bestMatch = candidate;
+            }
+        }
+        return bestMatch;
+    }
+
+    public Optional<String>getLevenshteinFormat (String input, String serverId) {
+        //All distinct games from the server
+        List<String> allGameNames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
+        if(allGameNames.isEmpty()) {
+            return Optional.empty();
+        }
+        String bestMatch = findClosestMatch(input,allGameNames);
+        return Optional.ofNullable(bestMatch);
     }
 }

@@ -73,30 +73,38 @@ public class SlashService {
         Optional<Long> totalMinutesOpt = playTimeService.getTotalMinutesIncludingLive(userId, gameName);
         if (totalMinutesOpt.isPresent()) {
             long totalMinutes = totalMinutesOpt.get();
-            String message = "You have played **" + gameName + "** for a total of **" + formatPlayTime(totalMinutes);
+            String message = "You have played **" + gameName + "** for a total of **" + formatPlayTime(totalMinutes) + "**";
             event.reply(message).queue();
         } else {
             event.reply("No playtime record found for: **" + gameName + "**.").queue();
         }
     }
-    // Method and Logic to implement Top 5 players in a single game
+    // Method and Logic to implement Top 3 players in a single game
     public void replyWithPlaytimeTop3 (SlashCommandInteractionEvent event) {
         String gameName = null;
+        //Need the serverId so we can get guild, and guildmembers with their id.
+        String serverId = event.getGuild().getId();
         if (event.getOption("game") != null) {
             //getting the gameName they are playing as an String
             gameName = event.getOption("game").getAsString().trim(); //trim for no spaces
+            //Since the raw gameName comes here, we need to format the output here.
+            Optional<String> correctedGameNameOpt = playTimeService.getLevenshteinFormat(gameName,serverId);
+            if(correctedGameNameOpt.isPresent()){
+                gameName = correctedGameNameOpt.get(); //method from PlayTimeService so we get correct output to the user
+            } else {
+                event.reply("No game found matching **" + gameName + "**.").queue();
+            }
 
         }
         if(gameName == null || gameName.isBlank()) {
-            event.reply("Please provide a game name using `/playtimeTop3 -> Game:<Game>`").queue();
+            event.reply("Please provide a game name using `/playtimetop3 game:<Name of the Game>`").queue();
             return;
         }
         if (event.getGuild() == null) {
             event.reply("This command must be used in a server").queue();
             return;
         }
-        //Need the serverId so we can get guild, and guildmembers with their id.
-        String serverId = event.getGuild().getId();
+        //ServerId is on top instead now.
         List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(gameName,serverId);
         //If statement to check if the guild has any playtime data on that game.
         if(topPlayers.isEmpty()) {
