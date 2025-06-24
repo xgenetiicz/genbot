@@ -81,54 +81,64 @@ public class SlashService {
     }
     // Method and Logic to implement Top 3 players in a single game
     public void replyWithPlaytimeTop3 (SlashCommandInteractionEvent event) {
-        String gameName = null;
+
         //Need the serverId so we can get guild, and guildmembers with their id.
         String serverId = event.getGuild().getId();
-        if (event.getOption("game") != null) {
-            //getting the gameName they are playing as an String
-            gameName = event.getOption("game").getAsString().trim(); //trim for no spaces
-            //Since the raw gameName comes here, we need to format the output here.
-            Optional<String> correctedGameNameOpt = playTimeService.getLevenshteinFormat(gameName,serverId);
-            if(correctedGameNameOpt.isPresent()){
-                gameName = correctedGameNameOpt.get(); //method from PlayTimeService so we get correct output to the user
-            } else {
-                event.reply("No game found matching **" + gameName + "**.").queue();
-            }
 
-        }
-        if(gameName == null || gameName.isBlank()) {
-            event.reply("Please provide a game name using `/playtimetop3 game:<Name of the Game>`").queue();
+        if (event.getOption("game") == null) {
+            event.reply("Please provide a game using the /playtimetop3 game:<Name of the game>").queue();
             return;
         }
-        if (event.getGuild() == null) {
-            event.reply("This command must be used in a server").queue();
-            return;
+
+        String gameName = event.getOption("game").getAsString().trim();
+        Optional<String> correctedGameNameOpt = playTimeService.getLevenshteinFormat(gameName,serverId);
+
+        // when correct, retrieve the correct game name.
+        String correctedGameName = "";
+        if (correctedGameNameOpt.isPresent()) {
+            correctedGameName = correctedGameNameOpt.get(); //if a match use it.
+        } else {
+            event.reply("No game record found matching that specific **Game** in this server.").queue();
         }
-        //ServerId is on top instead now.
-        List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(gameName,serverId);
-        //If statement to check if the guild has any playtime data on that game.
-        if(topPlayers.isEmpty()) {
-            event.reply("No playtime record found for **" + gameName + "** in this server.").queue();
-            return;
-        }
+        List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(correctedGameName,serverId);
+
+         //if the leaderboard list is empty, we want to display to the user that there are no players there.
+        //after testing the bot, the check under is useless since if there are no records assigned to the server,
+        //the output will show there are none records for the specific game, and if there is one user there, the leaderboard
+        // will display -> so there is no point of keeping this check if the check never goes through. this check could only be valid
+        // if I decide to implement later that the leaderboard needs to contain three people in order to show up, if not 3 users then an empty leaderboard.
+
+        //if(topPlayers.isEmpty()) {
+         //   event.reply("No users have played **" + correctedGameName + "** in this server").queue();
+          //  return;
+       // }
+
         //StringBuilder for leaderboard
         StringBuilder leaderboard = new StringBuilder();
+
+        //Medals for the places 1,2,3.
         String[] medals = {"\uD83E\uDD47", "\uD83E\uDD48", "\uD83E\uDD49"};
-        for (int i = 0; i < topPlayers.size(); i++){
+
+        for (int i = 0; i < topPlayers.size(); i++) {
             PlayTimeEntity entry = topPlayers.get(i);
+
             //Medals for the places 1,2,3.
-            String medal = i < medals.length ? medals [i] : "`#`" + (i + 1);
-            leaderboard.append(medal).append("**<@").append(entry.getUserId()).append(">") //Retrieve userId here with <@append.getUser>
-                                                                                            //This is how Discord find userName
-                    .append(": ").append(formatPlayTime(entry.getTotalMinutesPlayed())).append("**\n");
+            String medal = i < medals.length ? medals[i] : "`#`" + (i + 1);
+
+            leaderboard.append(medal)
+                    .append("**<@").append(entry.getUserId()).append(">") //Retrieve userId here with <@append.getUser>
+                    //This is how Discord find userName
+                    .append(": ").append(formatPlayTime(entry.getTotalMinutesPlayed()))
+                    .append("**\n");
         }
+
         //EmbedBuilder for setting leaderboard
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + gameName);
+        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + correctedGameName);
 
         embedBuilder.setDescription(leaderboard.toString());
         //Vertical color change on the embedBuilder.
-        embedBuilder.setColor(new Color(0,0,0));
+        embedBuilder.setColor(new Color(0, 0, 0));
         event.replyEmbeds(embedBuilder.build()).queue();
     }
 }

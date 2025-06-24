@@ -150,6 +150,12 @@ public class PlayTimeService {
                 bestMatch = candidate;
             }
         }
+        //Need to adjust the distance so we actually get correct game
+        //and if game does not exist, it should not output another game that exists
+        int maxDistance = 3;
+        if (minDistance > maxDistance)
+            return null; //no games then.
+
         return bestMatch;
     }
 
@@ -157,7 +163,7 @@ public class PlayTimeService {
         //All distinct games from the server
         List<String> allGameNames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
         if(allGameNames.isEmpty()) {
-            return Optional.empty();
+            return Optional.empty(); // Empty list of games, no games exists on record in the server.
         }
         String bestMatch = findClosestMatch(input,allGameNames);
         return Optional.ofNullable(bestMatch);
