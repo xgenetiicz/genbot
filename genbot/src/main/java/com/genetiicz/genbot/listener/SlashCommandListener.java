@@ -51,7 +51,10 @@ public class SlashCommandListener extends ListenerAdapter {
     }
     @Override
     public void onCommandAutoCompleteInteraction(@NotNull CommandAutoCompleteInteractionEvent event) {
-        if (!event.getName().equals("playtimetop3") || !event.getFocusedOption().getName().equals("game")) {
+        String commandName = event.getName();
+        String focusedOption = event.getFocusedOption().getName();
+
+        if (!focusedOption.equals("game")) {
             return;
         }
 
@@ -69,6 +72,8 @@ public class SlashCommandListener extends ListenerAdapter {
             choices.add(choice);
         }
         //Reply with choices
-        event.replyChoices(choices).queue();
+        if(commandName.equals("playtimetop3") || commandName.equals("playtime")){
+            event.replyChoices(choices).queue();
+        }
     }
 }
