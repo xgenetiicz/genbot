@@ -39,7 +39,7 @@ public class GenBotApplication {
 
 	@Bean
 	public SlashCommandListener slashCommandListener (SlashService slashService, PlayTimeService playTimeService) {
-		return new SlashCommandListener(slashService);
+		return new SlashCommandListener(slashService,playTimeService);
 	}
 
 	@Bean

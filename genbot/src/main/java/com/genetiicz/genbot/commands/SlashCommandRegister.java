@@ -22,7 +22,7 @@ public class SlashCommandRegister {
                 Commands.slash("playtime", "See how long you have been playing the game.")
                         .addOption(OptionType.STRING, "game", "Name of the game", false),
                  Commands.slash("playtimetop3", "See top 3 most active players in this game.")
-                         .addOption(OptionType.STRING, "game", "Name of the game", true)
+                         .addOption(OptionType.STRING, "game", "Name of the game", true,true) //we want autocomplete on this one.
         ).queue();
 
         System.out.println("Slash commands 'playtime' and 'playtimetop 'is registered!");

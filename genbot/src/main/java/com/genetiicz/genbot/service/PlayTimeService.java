@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -158,7 +159,7 @@ public class PlayTimeService {
 
         return bestMatch;
     }
-
+    //
     public Optional<String>getLevenshteinFormat (String input, String serverId) {
         //All distinct games from the server
         List<String> allGameNames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
@@ -167,5 +168,21 @@ public class PlayTimeService {
         }
         String bestMatch = findClosestMatch(input,allGameNames);
         return Optional.ofNullable(bestMatch);
+    }
+
+    // Method here so we can retrieve the array list of matching games for in the slashCommandListener
+    public List<String> getMatchingGamesStartingWith(String input, String serverId, int limit) {
+        List<String> allGames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
+        System.out.println("Fetched games: " + allGames);
+        List<String> matches = new ArrayList<>();
+
+        for (String game :  allGames) {
+            if(game.toLowerCase().startsWith(input.toLowerCase())) {
+                System.out.println("Builded AutoComplete correctly.");
+                matches.add(game);
+            }
+            if (matches.size() >= limit) break;
+        }
+        return matches;
     }
 }
