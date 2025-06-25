@@ -34,10 +34,10 @@ public class SlashCommandListener extends ListenerAdapter {
 
     @PostConstruct
     public void initHandlers() {
-        handlers.put("playtime", slashService::replyWithPlaytime);
+        handlers.put("myplaytime", slashService::replyWithPlaytime);
         //here we can add more handlers.put for several commands for the bot.
         //Since this worked, now we implement Top5 command inside the handler
-        handlers.put("playtimetop3", slashService::replyWithPlaytimeTop3);
+        handlers.put("leaderboard", slashService::replyWithPlaytimeTop3);
     }
 
     @Override
@@ -72,7 +72,7 @@ public class SlashCommandListener extends ListenerAdapter {
             choices.add(choice);
         }
         //Reply with choices
-        if(commandName.equals("playtimetop3") || commandName.equals("playtime")){
+        if(commandName.equals("leaderboard") || commandName.equals("myplaytime")){
             event.replyChoices(choices).queue();
         }
     }

@@ -19,12 +19,12 @@ public class SlashCommandRegister {
     @PostConstruct
     public void registerSlashCommand () {
         jda.updateCommands().addCommands(
-                Commands.slash("playtime", "See how long you have been playing the game.")
-                        .addOption(OptionType.STRING, "game", "Name of the game", false,true),
-                 Commands.slash("playtimetop3", "See top 3 most active players in this game.")
+                Commands.slash("myplaytime", "See how long you have been playing the game in **total**.")
+                        .addOption(OptionType.STRING, "game", "Name of the game", true,true),
+                 Commands.slash("leaderboard", "See top 3 most active players in this **game**.")
                          .addOption(OptionType.STRING, "game", "Name of the game", true,true) //we want autocomplete on this one.
         ).queue();
 
-        System.out.println("Slash commands 'playtime' and 'playtimetop 'is registered!");
+        System.out.println("Slash commands 'myplaytime' and 'leaderboard 'is registered!");
     }
 }
