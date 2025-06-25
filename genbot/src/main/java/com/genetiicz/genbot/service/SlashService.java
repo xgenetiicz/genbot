@@ -46,9 +46,10 @@ public class SlashService {
         String gameName = null;
 
         if (event.getOption("game") != null) {
-            gameName = event.getOption("game").getAsString();
+            gameName = event.getOption("game").getAsString().trim();
             System.out.println("Game option appear: " + gameName);
         } else {
+            //This check help with autocomplete because if not null we can retrieve arraylist
             if (event.getMember() != null) {
                 List<Activity> activities = event.getMember().getActivities();
                 for (int i = 0; i < activities.size(); i++) {
@@ -91,16 +92,7 @@ public class SlashService {
         }
 
         String gameName = event.getOption("game").getAsString().trim();
-        Optional<String> correctedGameNameOpt = playTimeService.getLevenshteinFormat(gameName,serverId);
-
-        // when correct, retrieve the correct game name.
-        String correctedGameName = "";
-        if (correctedGameNameOpt.isPresent()) {
-            correctedGameName = correctedGameNameOpt.get(); //if a match use it.
-        } else {
-            event.reply("No game record found matching that specific **Game** in this server.").queue();
-        }
-        List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(correctedGameName,serverId);
+        List<PlayTimeEntity> topPlayers = playTimeService.get3TopPlayersForGame(gameName,serverId);
 
          //if the leaderboard list is empty, we want to display to the user that there are no players there.
         //after testing the bot, the check under is useless since if there are no records assigned to the server,
@@ -134,7 +126,7 @@ public class SlashService {
 
         //EmbedBuilder for setting leaderboard
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + correctedGameName);
+        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + gameName);
 
         embedBuilder.setDescription(leaderboard.toString());
         //Vertical color change on the embedBuilder.

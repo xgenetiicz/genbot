@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -136,36 +137,19 @@ public class PlayTimeService {
         return playTimeRepository.findTop3ByGameNameIgnoreCaseAndServerIdOrderByTotalMinutesPlayedDesc(gameName, serverId);
     }
 
-    //Method for getting the closest searching query on correct game
-    private String findClosestMatch(String input, List<String> candidates) {
-        LevenshteinDistance distance = new LevenshteinDistance();
-        String bestMatch = null;
-        int minDistance = Integer.MAX_VALUE;
+    // Method here so we can retrieve the array list of matching games for in the slashCommandListener
+    public List<String> getMatchingGamesStartingWith(String input, String serverId, int limit) {
+        List<String> allGames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
+        System.out.println("Fetched games: " + allGames);
+        List<String> matches = new ArrayList<>();
 
-        //for loop to check all candidates of matches
-        for(String candidate : candidates) {
-            int dist = distance.apply(input.toLowerCase(), candidate.toLowerCase());
-            if(dist < minDistance) {
-                minDistance = dist;
-                bestMatch = candidate;
+        for (String game :  allGames) {
+            if(game.toLowerCase().startsWith(input.toLowerCase())) {
+                System.out.println("Builded AutoComplete correctly.");
+                matches.add(game);
             }
+            if (matches.size() >= limit) break;
         }
-        //Need to adjust the distance so we actually get correct game
-        //and if game does not exist, it should not output another game that exists
-        int maxDistance = 3;
-        if (minDistance > maxDistance)
-            return null; //no games then.
-
-        return bestMatch;
-    }
-
-    public Optional<String>getLevenshteinFormat (String input, String serverId) {
-        //All distinct games from the server
-        List<String> allGameNames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
-        if(allGameNames.isEmpty()) {
-            return Optional.empty(); // Empty list of games, no games exists on record in the server.
-        }
-        String bestMatch = findClosestMatch(input,allGameNames);
-        return Optional.ofNullable(bestMatch);
+        return matches;
     }
 }
