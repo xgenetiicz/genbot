@@ -70,7 +70,7 @@
 			<optional>true</optional>
 		</dependency>
 
-		<!-- Need to use Apache Commons Text for bestMatch-->
+		<!-- Need to use Apache Commons Text for fuzzyMatching with LevenShtein-->
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-text</artifactId>

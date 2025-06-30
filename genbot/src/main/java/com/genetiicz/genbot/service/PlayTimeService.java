@@ -2,8 +2,9 @@ package com.genetiicz.genbot.service;
 
 import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import com.genetiicz.genbot.database.repository.PlayTimeRepository;
-import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -140,6 +141,7 @@ public class PlayTimeService {
     // Method here so we can retrieve the array list of matching games for in the slashCommandListener
     public List<String> getMatchingGamesStartingWith(String input, String serverId, int limit) {
         List<String> allGames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
+
         System.out.println("Fetched games: " + allGames);
         List<String> matches = new ArrayList<>();
 
@@ -150,6 +152,20 @@ public class PlayTimeService {
             }
             if (matches.size() >= limit) break;
         }
+        //Adding fuzzy matching with levenshtein through apache common
+        //Because the user can also mistype at the autocompletion
         return matches;
+    }
+
+    //Method to retrive the list but for /myplaytime it should only retrieve an array list
+    //that the user has played, not the actual leaderboard list.
+
+    public List<PlayTimeEntity>getGamesPlayedByUser(String userId, String serverId) {
+        return playTimeRepository.findByUserIdAndServerId(userId, serverId);
+    }
+    public List<String> getMatchingGamesForUserStartingWith(String input, String serverId, String userId, int limit) {
+        return playTimeRepository.findDistinctUserGameNamesByPrefix(
+                input, serverId, userId, (Pageable) PageRequest.of(0, limit)
+        );
     }
 }
