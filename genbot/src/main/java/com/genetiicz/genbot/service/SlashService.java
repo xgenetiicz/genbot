@@ -133,4 +133,24 @@ public class SlashService {
         embedBuilder.setColor(new Color(0, 0, 0));
         event.replyEmbeds(embedBuilder.build()).queue();
     }
+
+    //We need one with choices also for /myplaytime.
+    public void replyWithMyPlaytime (SlashCommandInteractionEvent event,String userId, String serverId) {
+        List<PlayTimeEntity> records = playTimeService.getGamesPlayedByUser(userId, serverId);
+        if(records.isEmpty()) {
+            event.reply("You haven't played any tracked game yet in this **Server!**").queue();
+            return;
+        }
+
+        StringBuilder response = new StringBuilder(" Your playtime:\n");
+        for(PlayTimeEntity record : records) {
+            String formattedTime = formatPlayTime(record.getTotalMinutesPlayed());
+            response.append("- **")
+                    .append("** -")
+                    .append(formattedTime)
+                    .append("\n");
+        }
+
+        event.reply(response.toString()).setEphemeral(true).queue();
+    }
 }
