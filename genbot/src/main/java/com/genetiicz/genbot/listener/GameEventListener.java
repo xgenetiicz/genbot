@@ -20,13 +20,13 @@ public class GameEventListener extends ListenerAdapter {
     }
 
     //To catch any events at all
-    @Override
+   /* @Override
     public void onGenericEvent(@NotNull GenericEvent event) {
         System.out.println("EVENT RECEIVED: " + event.getClass().getSimpleName());
         if(event instanceof UserUpdateActivitiesEvent) {
             System.out.println("Detected UserUpdateActivites via OnGenericEVENT!!!!");
         }
-    }
+    }   */
 
     //Listener "listens" for start activity
     @Override
