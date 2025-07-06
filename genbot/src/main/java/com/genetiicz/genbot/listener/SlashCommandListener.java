@@ -47,6 +47,7 @@ public class SlashCommandListener extends ListenerAdapter {
         String commandName = event.getName();
         if(handlers.containsKey(commandName)) {
             handlers.get(commandName).accept(event);
+            System.out.println("CommandsSlash triggered: " + commandName);
         } else {
             event.reply("Unknown command.").queue();
         }

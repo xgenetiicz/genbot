@@ -43,32 +43,36 @@ public class SlashService {
     }
     public void replyWithPlaytime(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
+        String serverId = event.getGuild().getId();
         String gameName = null;
 
         if (event.getOption("game") != null) {
             gameName = event.getOption("game").getAsString().trim();
             System.out.println("Game option appear: " + gameName);
-        } else {
-            //This check help with autocomplete because if not null we can retrieve arraylist
-            if (event.getMember() != null) {
-                List<Activity> activities = event.getMember().getActivities();
-                for (int i = 0; i < activities.size(); i++) {
-                    Activity activity = activities.get(i);
-                    if (activity.getType() == Activity.ActivityType.PLAYING) {
-                        gameName = activity.getName();
-                        System.out.println("Detected playing game: " + gameName);
-                        break;
-                    }
-                }
-            }
         }
 
         if (gameName == null) {
             System.out.println("The command is not working.");
-            event.reply("You're not currently playing any game, or no game name was provided.").queue();
+            event.reply("Please select a game using the autocompletion list provided.").setEphemeral(true).queue();
             return;
         }
+        //Make sure that the autocompletion is actually checking the list retrieved
+        //Since the user can mistype and i need to enforce the strict of the autocompletion.
+        List<PlayTimeEntity> validGames = playTimeService.getGamesPlayedByUser(userId,serverId);
 
+        if (validGames.isEmpty()) {
+            event.reply("You haven't played any tracked games in this **server** yet.").setEphemeral(true).queue();
+            return;
+        }
+        //checking if the user has played by boolean with using validGames, so we can format it later with totalMinutesOpt.
+        //if not
+        String finalGameName = gameName;
+        boolean hasPlayed = validGames.stream().anyMatch(entry -> entry.getGameName().equalsIgnoreCase(finalGameName));
+
+        if(!hasPlayed) {
+            event.reply("You haven't played **" + gameName + "** in this server. Please select a game from the list.").setEphemeral(true).queue();
+            return;
+        }
         //Getting total minutes for how long we have played in our session
         //THis is a timebuilder
         Optional<Long> totalMinutesOpt = playTimeService.getTotalMinutesIncludingLive(userId, gameName);
@@ -77,9 +81,10 @@ public class SlashService {
             String message = "You have played **" + gameName + "** for a total of **" + formatPlayTime(totalMinutes) + "**";
             event.reply(message).queue();
         } else {
-            event.reply("No playtime record found for: **" + gameName + "**.").queue();
+            event.reply("No game or playtime record found for: **" + gameName + "**.").setEphemeral(true).queue();
         }
     }
+
     // Method and Logic to implement Top 3 players in a single game
     public void replyWithPlaytimeTop3 (SlashCommandInteractionEvent event) {
 
@@ -132,25 +137,5 @@ public class SlashService {
         //Vertical color change on the embedBuilder.
         embedBuilder.setColor(new Color(0, 0, 0));
         event.replyEmbeds(embedBuilder.build()).queue();
-    }
-
-    //We need one with choices also for /myplaytime.
-    public void replyWithMyPlaytime (SlashCommandInteractionEvent event,String userId, String serverId) {
-        List<PlayTimeEntity> records = playTimeService.getGamesPlayedByUser(userId, serverId);
-        if(records.isEmpty()) {
-            event.reply("You haven't played any tracked game yet in this **Server!**").queue();
-            return;
-        }
-
-        StringBuilder response = new StringBuilder(" Your playtime:\n");
-        for(PlayTimeEntity record : records) {
-            String formattedTime = formatPlayTime(record.getTotalMinutesPlayed());
-            response.append("- **")
-                    .append("** -")
-                    .append(formattedTime)
-                    .append("\n");
-        }
-
-        event.reply(response.toString()).setEphemeral(true).queue();
     }
 }
