@@ -4,10 +4,12 @@ import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.awt.*;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,9 +58,10 @@ public class SlashService {
             event.reply("Please select a game using the autocompletion list provided.").setEphemeral(true).queue();
             return;
         }
+
         //Make sure that the autocompletion is actually checking the list retrieved
         //Since the user can mistype and i need to enforce the strict of the autocompletion.
-        List<PlayTimeEntity> validGames = playTimeService.getGamesPlayedByUser(userId,serverId);
+        List<PlayTimeEntity> validGames = playTimeService.getGamesPlayedByUser(userId, serverId);
 
         if (validGames.isEmpty()) {
             event.reply("You haven't played any tracked games in this **server** yet.").setEphemeral(true).queue();
@@ -69,7 +72,17 @@ public class SlashService {
         String finalGameName = gameName;
         boolean hasPlayed = validGames.stream().anyMatch(entry -> entry.getGameName().equalsIgnoreCase(finalGameName));
 
-        if(!hasPlayed) {
+        String bestMatch = null;
+        if (!hasPlayed) {
+            //Also adding levenshtein matching for user that writes wrong
+            LevenshteinDistance levenshtein = new LevenshteinDistance();
+            bestMatch = validGames.stream().map(PlayTimeEntity::getGameName).min(Comparator.comparingInt(name ->
+                    levenshtein.apply(name.toLowerCase(), finalGameName.toLowerCase()))).orElse(null);
+        }
+
+        if (bestMatch != null) {
+            event.reply("You haven't played **" + gameName + "** in this server.\nDid you mean: **" + bestMatch + "**?").setEphemeral(true).queue();
+        } else {
             event.reply("You haven't played **" + gameName + "** in this server. Please select a game from the list.").setEphemeral(true).queue();
             return;
         }
@@ -92,7 +105,7 @@ public class SlashService {
         String serverId = event.getGuild().getId();
 
         if (event.getOption("game") == null) {
-            event.reply("Please provide a game using the /playtimetop3 game:<Name of the game>").queue();
+            event.reply("Please select a game from the autocompletion list.").setEphemeral(true).queue();
             return;
         }
 
@@ -105,10 +118,10 @@ public class SlashService {
         // will display -> so there is no point of keeping this check if the check never goes through. this check could only be valid
         // if I decide to implement later that the leaderboard needs to contain three people in order to show up, if not 3 users then an empty leaderboard.
 
-        //if(topPlayers.isEmpty()) {
-         //   event.reply("No users have played **" + correctedGameName + "** in this server").queue();
-          //  return;
-       // }
+        if(topPlayers.isEmpty()) {
+            event.reply("No users have played **" + gameName + "** in this server").setEphemeral(true).queue();
+            return;
+        }
 
         //StringBuilder for leaderboard
         StringBuilder leaderboard = new StringBuilder();
