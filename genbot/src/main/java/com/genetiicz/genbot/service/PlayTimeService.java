@@ -160,9 +160,11 @@ public class PlayTimeService {
     //Method to retrive the list but for /myplaytime it should only retrieve an array list
     //that the user has played, not the actual leaderboard list.
 
-    public List<PlayTimeEntity>getGamesPlayedByUser(String userId, String serverId) {
+     List<PlayTimeEntity>getGamesPlayedByUser(String userId, String serverId) {
         return playTimeRepository.findByUserIdAndServerId(userId, serverId);
     }
+
+    //suggest autocompletion for the user based on input.
     public List<String> getMatchingGamesForUserStartingWith(String input, String serverId, String userId, int limit) {
         return playTimeRepository.findDistinctUserGameNamesByPrefix(
                 input, serverId, userId, (Pageable) PageRequest.of(0, limit)
