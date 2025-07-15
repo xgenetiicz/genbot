@@ -3,15 +3,22 @@ package com.genetiicz.genbot.listener;
 import com.genetiicz.genbot.service.PlayTimeService;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.GenericEvent;
+import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateActivitiesEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GameEventListener extends ListenerAdapter {
     private final PlayTimeService playTimeService;
+
+    //Found out that discord is tracking through all servers.
+    //the idea is only to track now when they are in voice in the particual server
+    private final Map<String,String> inVoice = new ConcurrentHashMap<>();
 
     //Automatically inject tables in PostgreSQL
     @Autowired
@@ -19,26 +26,42 @@ public class GameEventListener extends ListenerAdapter {
         this.playTimeService = playTimeService;
     }
 
-    //To catch any events at all
-   /* @Override
-    public void onGenericEvent(@NotNull GenericEvent event) {
-        System.out.println("EVENT RECEIVED: " + event.getClass().getSimpleName());
-        if(event instanceof UserUpdateActivitiesEvent) {
-            System.out.println("Detected UserUpdateActivites via OnGenericEVENT!!!!");
+    @Override
+    public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event) {
+        if (event.getMember().getUser().isBot()) return; //check bot
+
+        String userId = event.getMember().getId();
+        String serverId = event.getGuild().getId();
+        // user just joined a voice channel
+        if (event.getChannelJoined() != null) {
+            System.out.println(userId + " Joined voice in guild " + serverId);
+            inVoice.put(userId, serverId);
         }
-    }   */
+        // user just left all voice channels
+        else if (event.getChannelLeft() != null && event.getChannelJoined() == null) {
+            System.out.println(userId + "Left Voice in guild" + serverId);
+            inVoice.remove(userId);
+        }
+    }
 
     //Listener "listens" for start activity
     @Override
     public void onUserUpdateActivities(@NotNull UserUpdateActivitiesEvent event) {
         //Just to check if the method gets used at all
         System.out.println("onUserUpdateActivities Activated");
-       if (event.getUser().isBot()) return; //Ignore bots
+
+       if (event.getUser().isBot())
+           return; //Ignore bots
 
         //Get userId & serverName
         String userId = event.getUser().getId();
         String serverId = event.getGuild().getId();
         String serverName = event.getGuild().getName();
+
+        //Only track if they are currently in voice in that guild (server)
+        if(!serverId.equals(inVoice.get(userId))) {
+            return;
+        }
 
         //Get activity on the user on the specific game they are playing, if it is null then the
         //user won't get any values since they do not exist, and if they do exist we get values and

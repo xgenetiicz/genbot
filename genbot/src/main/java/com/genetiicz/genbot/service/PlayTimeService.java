@@ -29,7 +29,7 @@ public class PlayTimeService {
     //Method to track playtime by handling activity start and end.
     public void handleActivityStart(String userId, String serverId, String serverName, String gameName) {
         //Use the repository first to check if user have already record.
-        Optional<PlayTimeEntity> existingRecordOpt = playTimeRepository.findByUserIdAndGameName(userId,gameName);
+        Optional<PlayTimeEntity> existingRecordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId,serverId,gameName);
         //Check if user already have a record
         if(existingRecordOpt.isEmpty()) {
             System.out.println("First time playing this game! Creating a new record for you! :)");
@@ -49,14 +49,14 @@ public class PlayTimeService {
         }
         //Now we start the sessionTimer for trackings the User's
         //Activity on game
-        String sessionKey = userId + ":" + gameName;
+        String sessionKey = userId + ":" + serverId + ":" + gameName ;
         activePlaySessions.put(sessionKey,System.currentTimeMillis());
-        System.out.println("Session start: User " + userId + " started playing " + gameName);
+        System.out.println("Session start: User " + userId + " started playing " + gameName + "in server: **" + serverId + " **");
     }
     //Method to track end of playtime for the user
     public void handleActivityEnd(String userId, String serverId, String serverName, String gameName) {
         //Adding key with value pair that hold userId and gameName, on start and end.
-        String sessionKey = userId + ":" + gameName;
+        String sessionKey = userId + ":" + serverId + ":" + gameName;
         if(!activePlaySessions.containsKey(sessionKey)) {
             return;
         }
@@ -66,12 +66,12 @@ public class PlayTimeService {
         long durationMinutes= durationMillis / 60000;
 
         //We want to track at least one minute over since launching the game is not actually playing.
-        //if(durationMinutes < 1) {
-          //  System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
-          //  return;
-        //}
+        if(durationMinutes < 1) {
+            System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
+             return;
+        }
         System.out.println("SESSION END: User " + userId + " played " + gameName + " for " + durationMinutes + " minutes. Updating database.");
-        Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameName(userId, gameName);
+        Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId, serverId, gameName);
 
         // Save the record and present it as a new totalTime when playing
         // the same game again, so this will add the current minutes to it.
@@ -82,17 +82,17 @@ public class PlayTimeService {
         });
     }
 
-    public long getLiveMinutes(String userId, String gameName) {
-        String key = userId + ":" + gameName;
+    public long getLiveMinutes(String userId,String serverId, String gameName) {
+        String key = userId + ":" + serverId + ":" + gameName;
         Long starTime = activePlaySessions.get(key);
         if(starTime == null) {
             return 0;
         }
         return (System.currentTimeMillis() - starTime) / 60000;
     }
-    public Optional<Long> getTotalMinutesIncludingLive(String userId, String gameName) {
-        long liveMinutes = getLiveMinutes(userId, gameName);
-        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName);
+    public Optional<Long> getTotalMinutesIncludingLive(String userId, String serverId, String gameName) {
+        long liveMinutes = getLiveMinutes(userId,serverId, gameName);
+        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndServerIdAndGameNameIgnoreCase(userId,serverId, gameName);
 
         if (record.isPresent()) {
             return Optional.of(record.get().getTotalMinutesPlayed() + liveMinutes);
@@ -113,20 +113,21 @@ public class PlayTimeService {
             long minutesPlayed = (now - startTime) / 60000;
 
             if (minutesPlayed > 0) {
-                String[] parts = key.split(":");
-                if (parts.length < 2) {
+                String[] parts = key.split(":", 3);
+                if (parts.length < 3) {
                     System.out.println("Invalid session key: " + key);
                     continue;
                 }
 
                 String userId = parts[0];
-                String gameName = parts[1];
+                String serverId = parts[1];
+                String gameName = parts[2];
 
-                Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameName(userId, gameName);
+                Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId,serverId,gameName);
                 recordOpt.ifPresent(record -> {
                     record.setTotalMinutesPlayed(record.getTotalMinutesPlayed() + minutesPlayed);
                     playTimeRepository.save(record);
-                    System.out.println("Flushed " + minutesPlayed + " minutes for " + userId + " on " + gameName);
+                    System.out.println("Flushed " + minutesPlayed + " minutes for " + userId + " on " + gameName + " in " + serverId);
                 });
 
                 // Reset the session start time to now
@@ -160,7 +161,7 @@ public class PlayTimeService {
     //Method to retrive the list but for /myplaytime it should only retrieve an array list
     //that the user has played, not the actual leaderboard list.
 
-     List<PlayTimeEntity>getGamesPlayedByUser(String userId, String serverId) {
+     List<PlayTimeEntity>getGamesPlayedByUser(String userId,String serverId) {
         return playTimeRepository.findByUserIdAndServerId(userId, serverId);
     }
 
