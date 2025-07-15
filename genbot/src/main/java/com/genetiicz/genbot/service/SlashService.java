@@ -138,10 +138,27 @@ public class SlashService {
         //the output will show there are none records for the specific game, and if there is one user there, the leaderboard
         // will display -> so there is no point of keeping this check if the check never goes through. this check could only be valid
         // if I decide to implement later that the leaderboard needs to contain three people in order to show up, if not 3 users then an empty leaderboard.
-
         if(topPlayers.isEmpty()) {
-            event.reply("No users have played **" + gameName + "** in this server").setEphemeral(true).queue();
-            return;
+
+                //get distinct games for leaderboard also -- levenshtein distance
+                List<String> allGames = playTimeService.getMatchingGamesStartingWith("" ,serverId,Integer.MAX_VALUE);
+                LevenshteinDistance lev = new LevenshteinDistance();
+
+                //Closest match to all games
+            String bestMatch = allGames.stream()
+                    .min(Comparator.comparingInt(g ->
+                            lev.apply(g.toLowerCase(), gameName.toLowerCase())))
+                    .orElse(null);
+
+                String message;
+                if(bestMatch != null && !bestMatch.equalsIgnoreCase(gameName)) {
+                    message ="No one's played **" + gameName + "** yet.\n" +
+                            "Did you mean: **" + bestMatch + "**?";
+                } else {
+                    message = "No users have played **" + gameName + "** in this server.";
+                }
+            event.reply(message).setEphemeral(true).queue();
+                return;
         }
 
         //StringBuilder for leaderboard
