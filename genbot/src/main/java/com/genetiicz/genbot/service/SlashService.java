@@ -150,13 +150,11 @@ public class SlashService {
                             lev.apply(g.toLowerCase(), gameName.toLowerCase())))
                     .orElse(null);
 
-                String message;
+                String message = "";
                 if(bestMatch != null && !bestMatch.equalsIgnoreCase(gameName)) {
                     message ="No one's played **" + gameName + "** yet.\n" +
                             "Did you mean: **" + bestMatch + "**?";
-                } else {
-                    message = "No users have played **" + gameName + "** in this server.";
-                }
+                } 
             event.reply(message).setEphemeral(true).queue();
                 return;
         }
