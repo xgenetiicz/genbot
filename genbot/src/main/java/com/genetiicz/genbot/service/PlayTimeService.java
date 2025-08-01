@@ -1,98 +1,116 @@
 package com.genetiicz.genbot.service;
 
 import com.genetiicz.genbot.database.entity.PlayTimeEntity;
+import com.genetiicz.genbot.database.entity.PlayTimeServerEntity;
 import com.genetiicz.genbot.database.repository.PlayTimeRepository;
+import com.genetiicz.genbot.database.repository.PlayTimeServerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 
 @Service
 public class PlayTimeService {
     private final PlayTimeRepository playTimeRepository;
+    private final PlayTimeServerRepository playTimeServerRepository;
     private final Map<String, Long> activePlaySessions = new ConcurrentHashMap<>();
 
-    //Using Autowired to automatically inject repository using constructor
+    //Using Autowired to automatically inject repositories via constructor
     @Autowired
-    public PlayTimeService(PlayTimeRepository playTimeRepository) {
+    public PlayTimeService(PlayTimeRepository playTimeRepository,
+                           PlayTimeServerRepository playTimeServerRepository) {
         this.playTimeRepository = playTimeRepository;
+        this.playTimeServerRepository = playTimeServerRepository;
     }
 
     //Method to track playtime by handling activity start and end.
-    public void handleActivityStart(String userId, String serverId, String serverName, String gameName) {
-        //Use the repository first to check if user have already record.
-        Optional<PlayTimeEntity> existingRecordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId,serverId,gameName);
+    public String handleActivityStart(String userId, String serverId, String serverName, String gameName) {
+        //Use the repository first to check if user have already a global record.
+        Optional<PlayTimeEntity> existingGlobal = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName);
         //Check if user already have a record
-        if(existingRecordOpt.isEmpty()) {
+        if (existingGlobal.isEmpty()) {
             System.out.println("First time playing this game! Creating a new record for you! :)");
-
-
-        //We make a new record if a user doesn't have any record
-        //Create a new instance of the object with new record
-        PlayTimeEntity newRecord = new PlayTimeEntity();
-        newRecord.setUserId(userId);
-        newRecord.setServerId(serverId);
-        newRecord.setServerName(serverName);
-        newRecord.setGameName(gameName);
-        newRecord.setTotalMinutesPlayed(0);
-
-        //Save the record
-        playTimeRepository.save(newRecord);
+            //We make a new global record if a user doesn't have any record
+            //Create a new instance of the object with new record
+            PlayTimeEntity newRecord = new PlayTimeEntity();
+            newRecord.setUserId(userId);
+            newRecord.setServerId(serverId);
+            newRecord.setGameName(gameName);
+            newRecord.setTotalMinutesPlayed(0);
+            //Save the record
+            playTimeRepository.save(newRecord);
         }
-        //Now we start the sessionTimer for trackings the User's
+
+        //Use the server-log repository to check if mapping exists
+        boolean mappingExists = playTimeServerRepository
+                .findByUserIdAndGameNameAndServerIdIgnoreCase(userId, gameName, serverId)
+                .isPresent();
+        if (!mappingExists) {
+            //Create server mapping if not present
+            PlayTimeServerEntity map = new PlayTimeServerEntity();
+            map.setUserId(userId);
+            map.setGameName(gameName);
+            map.setServerId(serverId);
+            map.setServerName(serverName);
+            playTimeServerRepository.save(map);
+        }
+
+        //Now we start the sessionTimer for tracking the User's
         //Activity on game
-        String sessionKey = userId + ":" + serverId + ":" + gameName ;
-        activePlaySessions.put(sessionKey,System.currentTimeMillis());
-        System.out.println("Session start: User " + userId + " started playing " + gameName + "in server: **" + serverId + " **");
+        String sessionKey = userId + ":" + serverId + ":" + gameName;
+        activePlaySessions.put(sessionKey, System.currentTimeMillis());
+        System.out.println("Session start: User " + userId + " started playing " + gameName + " in server: **" + serverId + " **");
+
+        // return welcome for new-to-server only
+        return mappingExists ? null : "First time playing this **" + gameName + "** on this server! Welcome!";
     }
+
     //Method to track end of playtime for the user
     public void handleActivityEnd(String userId, String serverId, String serverName, String gameName) {
-        //Adding key with value pair that hold userId and gameName, on start and end.
+        //Adding key with value pair that hold userId and gameName and serverId
         String sessionKey = userId + ":" + serverId + ":" + gameName;
-        if(!activePlaySessions.containsKey(sessionKey)) {
+        if (!activePlaySessions.containsKey(sessionKey)) {
             return;
         }
         long startTime = activePlaySessions.remove(sessionKey);
-        long endTime = System.currentTimeMillis();
-        long durationMillis = endTime - startTime;
+        long durationMillis = System.currentTimeMillis() - startTime;
         long durationMinutes= durationMillis / 60000;
 
         //We want to track at least one minute over since launching the game is not actually playing.
-        if(durationMinutes < 1) {
+        if (durationMinutes < 1) {
             System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
-             return;
+            return;
         }
         System.out.println("SESSION END: User " + userId + " played " + gameName + " for " + durationMinutes + " minutes. Updating database.");
-        Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId, serverId, gameName);
 
-        // Save the record and present it as a new totalTime when playing
-        // the same game again, so this will add the current minutes to it.
-        recordOpt.ifPresent(record -> {
-            long newTotalTime = record.getTotalMinutesPlayed() + durationMinutes;
-            record.setTotalMinutesPlayed(newTotalTime);
-            playTimeRepository.save(record);
-        });
+        // Update global total
+        playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName)
+                .ifPresent(record -> {
+                    record.setTotalMinutesPlayed(record.getTotalMinutesPlayed() + durationMinutes);
+                    playTimeRepository.save(record);
+                });
     }
 
-    public long getLiveMinutes(String userId,String serverId, String gameName) {
-        String key = userId + ":" + serverId + ":" + gameName;
-        Long starTime = activePlaySessions.get(key);
-        if(starTime == null) {
+    public long getLiveMinutes(String userId, String gameName) {
+        String key = userId + ":" + gameName;
+        Long startTime = activePlaySessions.get(key);
+        if (startTime == null) {
             return 0;
         }
-        return (System.currentTimeMillis() - starTime) / 60000;
+        return (System.currentTimeMillis() - startTime) / 60000;
     }
-    public Optional<Long> getTotalMinutesIncludingLive(String userId, String serverId, String gameName) {
-        long liveMinutes = getLiveMinutes(userId,serverId, gameName);
-        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndServerIdAndGameNameIgnoreCase(userId,serverId, gameName);
+
+    public Optional<Long> getTotalMinutesIncludingLive(String userId, String gameName) {
+        long liveMinutes = getLiveMinutes(userId,gameName);
+        Optional<PlayTimeEntity> record = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gameName);
 
         if (record.isPresent()) {
             return Optional.of(record.get().getTotalMinutesPlayed() + liveMinutes);
@@ -108,7 +126,7 @@ public class PlayTimeService {
         long now = System.currentTimeMillis();
 
         for (Map.Entry<String, Long> entry : activePlaySessions.entrySet()) {
-            String key = entry.getKey(); // format: userId:gameName
+            String key = entry.getKey(); // format: userId:serverId:gameName
             long startTime = entry.getValue();
             long minutesPlayed = (now - startTime) / 60000;
 
@@ -120,14 +138,14 @@ public class PlayTimeService {
                 }
 
                 String userId = parts[0];
-                String serverId = parts[1];
-                String gameName = parts[2];
+                String sid = parts[1];
+                String gm = parts[2];
 
-                Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndServerIdAndGameName(userId,serverId,gameName);
+                Optional<PlayTimeEntity> recordOpt = playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, gm);
                 recordOpt.ifPresent(record -> {
                     record.setTotalMinutesPlayed(record.getTotalMinutesPlayed() + minutesPlayed);
                     playTimeRepository.save(record);
-                    System.out.println("Flushed " + minutesPlayed + " minutes for " + userId + " on " + gameName + " in " + serverId);
+                    System.out.println("Flushed " + minutesPlayed + " minutes for " + userId + " on " + gm + " in " + sid);
                 });
 
                 // Reset the session start time to now
@@ -135,40 +153,35 @@ public class PlayTimeService {
             }
         }
     }
+
     public List<PlayTimeEntity> get3TopPlayersForGame(String gameName, String serverId) {
-        return playTimeRepository.findTop3ByGameNameIgnoreCaseAndServerIdOrderByTotalMinutesPlayedDesc(gameName, serverId);
+        return playTimeRepository.findTop3ByGameAndServerMapping(gameName, serverId, PageRequest.of(0,3)); //This mapping will just include leaderboards that have tracking -  and games.
     }
 
     // Method here so we can retrieve the array list of matching games for in the slashCommandListener
     public List<String> getMatchingGamesStartingWith(String input, String serverId, int limit) {
-        List<String> allGames = playTimeRepository.findDistinctGameNamesByServerId(serverId);
+        List<String> allGames = playTimeServerRepository.findDistinctGameNamesByServerId(serverId);
 
         System.out.println("Fetched games: " + allGames);
-        List<String> matches = new ArrayList<>();
-
-        for (String game :  allGames) {
-            if(game.toLowerCase().startsWith(input.toLowerCase())) {
-                System.out.println("Builded AutoComplete correctly.");
-                matches.add(game);
-            }
-            if (matches.size() >= limit) break;
-        }
-        //Adding fuzzy matching with levenshtein through apache common
-        //Because the user can also mistype at the autocompletion
-        return matches;
+        return allGames.stream()
+                .filter(game -> game.toLowerCase().startsWith(input.toLowerCase()))
+                .limit(limit)
+                .collect(Collectors.toList());
     }
 
     //Method to retrive the list but for /myplaytime it should only retrieve an array list
     //that the user has played, not the actual leaderboard list.
-
-     List<PlayTimeEntity>getGamesPlayedByUser(String userId,String serverId) {
-        return playTimeRepository.findByUserIdAndServerId(userId, serverId);
+    public List<PlayTimeEntity> getGamesPlayedByUser(String userId, String serverId) {
+        return playTimeServerRepository.findByUserIdAndServerId(userId, serverId)
+                .stream()
+                .map(m -> playTimeRepository.findByUserIdAndGameNameIgnoreCase(userId, m.getGameName()).orElse(null))
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
     }
 
     //suggest autocompletion for the user based on input.
     public List<String> getMatchingGamesForUserStartingWith(String input, String serverId, String userId, int limit) {
-        return playTimeRepository.findDistinctUserGameNamesByPrefix(
-                input, serverId, userId, (Pageable) PageRequest.of(0, limit)
-        );
+        return playTimeServerRepository
+                .findDistinctGameNamesByUserIdAndServerIdIgnoreCase(input, serverId, userId, PageRequest.of(0, limit));
     }
 }

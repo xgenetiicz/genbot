@@ -1,8 +1,7 @@
 package com.genetiicz.genbot.listener;
 
-import com.genetiicz.genbot.service.PlayTimeService;
+import com.genetiicz.genbot.service.VoiceSessionService;
 import net.dv8tion.jda.api.entities.Activity;
-import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
 import net.dv8tion.jda.api.events.user.update.UserUpdateActivitiesEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -13,17 +12,33 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-public class GameEventListener extends ListenerAdapter {
-    private final PlayTimeService playTimeService;
-
-    //Found out that discord is tracking through all servers.
-    //the idea is only to track now when they are in voice in the particual server
+public class VoiceEventListener extends ListenerAdapter {
+    private final VoiceSessionService voiceSessionService;
+    //the idea is only to track now when they are in voice in the particual server // moved this to here since we will store
+    // in a new entity
     private final Map<String,String> inVoice = new ConcurrentHashMap<>();
 
-    //Automatically inject tables in PostgreSQL
     @Autowired
-    public GameEventListener(PlayTimeService playTimeService) {
-        this.playTimeService = playTimeService;
+    public VoiceEventListener(VoiceSessionService voiceSessionService){
+        this.voiceSessionService =  voiceSessionService;
+    }
+
+    @Override
+    public void onGuildVoiceUpdate(@NotNull GuildVoiceUpdateEvent event) {
+        if (event.getMember().getUser().isBot()) return; //check bot
+
+        String userId = event.getMember().getId();
+        String serverId = event.getGuild().getId();
+        // user just joined a voice channel
+        if (event.getChannelJoined() != null) {
+            System.out.println(userId + " Joined voice in guild " + serverId);
+            inVoice.put(userId, serverId);
+        }
+        // user just left all voice channels
+        else if (event.getChannelLeft() != null && event.getChannelJoined() == null) {
+            System.out.println(userId + "Left Voice in guild" + serverId);
+            inVoice.remove(userId);
+        }
     }
 
     //Listener "listens" for start activity
@@ -40,6 +55,11 @@ public class GameEventListener extends ListenerAdapter {
         String serverId = event.getGuild().getId();
         String serverName = event.getGuild().getName();
 
+        //Only track if they are currently in voice in that guild (server)
+        if(!serverId.equals(inVoice.get(userId))) {
+            return;
+        }
+
         //Get activity on the user on the specific game they are playing, if it is null then the
         //user won't get any values since they do not exist, and if they do exist we get values and
         //then detect for game start and game stopped.
@@ -54,7 +74,7 @@ public class GameEventListener extends ListenerAdapter {
             if (activity.getType() == Activity.ActivityType.PLAYING &&
                     oldActivities.stream().noneMatch(a ->a.getName().equals(activity.getName()))) {
                 System.out.println("Game detected for: " + userId + " started playing " + activity.getName());
-                playTimeService.handleActivityStart(userId,serverId,serverName,activity.getName());
+                voiceSessionService.handleActivityStart(userId,serverId,serverName,activity.getName());
             }
         }
 
@@ -63,7 +83,7 @@ public class GameEventListener extends ListenerAdapter {
             if(activity.getType() == Activity.ActivityType.PLAYING &&
                     newActivities.stream().noneMatch(a -> a.getName().equals(activity.getName()))) {
                 System.out.println("Game stopped for: " + userId + " stopped playing " + activity.getName());
-                playTimeService.handleActivityEnd(userId,serverId,serverName, activity.getName());
+                voiceSessionService.handleActivityEnd(userId,serverId,serverName, activity.getName());
             }
         }
     }

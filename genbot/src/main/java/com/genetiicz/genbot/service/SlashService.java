@@ -104,7 +104,7 @@ public class SlashService {
 
         // Getting total minutes for how long we have played in our session
         Optional<Long> totalMinutesOpt =
-                playTimeService.getTotalMinutesIncludingLive(userId, serverId, gameName);
+                playTimeService.getTotalMinutesIncludingLive(userId, gameName);
 
         if (totalMinutesOpt.isPresent()) {
             long totalMinutes = totalMinutesOpt.get();
@@ -150,12 +150,14 @@ public class SlashService {
                             lev.apply(g.toLowerCase(), gameName.toLowerCase())))
                     .orElse(null);
 
-                String message = "";
-                if(bestMatch != null && !bestMatch.equalsIgnoreCase(gameName)) {
-                    message ="No one's played **" + gameName + "** yet.\n" +
-                            "Did you mean: **" + bestMatch + "**?";
-                } 
-            event.reply(message).setEphemeral(true).queue();
+            String reply;
+            if(bestMatch != null && !bestMatch.equalsIgnoreCase(gameName)) {
+                reply = "No one has played **" + gameName + "** on this server yet.\n"
+                        + "Did you mean **" + bestMatch + "**?";
+            } else {
+                reply = "There are **no records** of this game by any user in this **server**";
+            }
+            event.reply(reply).setEphemeral(true).queue();
                 return;
         }
 
