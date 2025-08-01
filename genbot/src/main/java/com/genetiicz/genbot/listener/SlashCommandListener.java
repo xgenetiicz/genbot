@@ -70,7 +70,7 @@ public class SlashCommandListener extends ListenerAdapter {
         //List for fetching matching games from service max 10 choices.
         //We are also adding userId here, so we can fetch the auto-completion for /myplaytime
         //and the idea is to only retrieve the list of games the user has played.
-        List<String> gameSuggestions = playTimeService.getMatchingGamesStartingWith(input, serverId, 10); // we want do display max 10 choices, discord has 25 general choices.
+        List<String> gameSuggestions;  // we want do display max 10 choices, discord has 25 general choices.
             if(commandName.equals("myplaytime")) {
                 gameSuggestions = playTimeService.getMatchingGamesForUserStartingWith(input,serverId,userId,10);
             } else {

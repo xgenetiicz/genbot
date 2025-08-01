@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 //Lombok annotations
 @Getter
@@ -12,7 +13,12 @@ import org.springframework.data.annotation.LastModifiedDate;
 @NoArgsConstructor
 //JPA annotations
 @Entity
-@Table(name = "playtime_records") //the name of the table in PostgreSQL
+@Table(name = "playtime_records", uniqueConstraints = @UniqueConstraint(columnNames =
+        {"user_id", "game_name"}
+    )
+)
+//the name of the table in PostgreSQL with constraints.
+@EntityListeners(AuditingEntityListener.class) //updates the @LastModifiedDate - if not there = null
 public class PlayTimeEntity {
 
     @Id
@@ -24,9 +30,6 @@ public class PlayTimeEntity {
 
     @Column(nullable = false)
     private String serverId;
-
-    @Column(nullable = false)
-    private String serverName;
 
     @Column(nullable = false)
     private String gameName;

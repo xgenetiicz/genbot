@@ -51,7 +51,8 @@ public class GenBotApplication {
 		builder.enableIntents(
 				GatewayIntent.GUILD_PRESENCES,
 				GatewayIntent.GUILD_MEMBERS,
-				GatewayIntent.MESSAGE_CONTENT
+				GatewayIntent.MESSAGE_CONTENT,
+				GatewayIntent.GUILD_VOICE_STATES // voice intent so jda can retrieve from listener
 		);
 		System.out.println("Gateways are intact and working as intended, in code and in dev portal(Check Again)!");
 
@@ -59,6 +60,7 @@ public class GenBotApplication {
 		builder.setMemberCachePolicy(MemberCachePolicy.ALL);
 		builder.setChunkingFilter(ChunkingFilter.ALL);
 		builder.enableCache(CacheFlag.ACTIVITY);
+		builder.enableCache(CacheFlag.VOICE_STATE);
 
 		// Register the controller class to listen for Discord events
 		builder.addEventListeners(gameEventListener);
@@ -84,8 +86,8 @@ public class GenBotApplication {
 			System.out.println("JDA is ready and connected");
 				//Load all members for tracking presence.
 				 jda.getGuilds().forEach(guild ->
-						guild.loadMembers().onSuccess(members ->
-								System.out.println("Loaded " + members.size() + "members for guild" + guild.getName())));
+						guild.findMembers(member ->  true).onSuccess(members ->
+								System.out.println("Found " + members.size() + " members for guild: **" + guild.getName())));
 			return jda;
 		} catch (InterruptedException e) {
 			System.err.println("JDA is not working as intended");

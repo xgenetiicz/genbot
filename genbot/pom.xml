@@ -61,7 +61,7 @@
 			<groupId>net.dv8tion</groupId>
 			<artifactId>JDA</artifactId>
 			<version>5.0.0-beta.21</version>
-			<!-- Need especially version 5.0.0.0 beta-21 if Discord is going to listen to game activity.-->
+			<!-- Need especially version 5.0.0.0 beta-24 if Discord is going to listen to game activity.-->
 		</dependency>
 
 		<dependency>

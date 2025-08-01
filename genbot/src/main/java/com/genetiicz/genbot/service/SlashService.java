@@ -46,8 +46,8 @@ public class SlashService {
     public void replyWithPlaytime(SlashCommandInteractionEvent event) {
         String userId = event.getUser().getId();
         String serverId = event.getGuild().getId();
-        String gameName = null;
 
+        String gameName = null;
         if (event.getOption("game") != null) {
             gameName = event.getOption("game").getAsString().trim();
             System.out.println("Game option appear: " + gameName);
@@ -55,48 +55,69 @@ public class SlashService {
 
         if (gameName == null) {
             System.out.println("The command is not working.");
-            event.reply("Please select a game using the autocompletion list provided.").setEphemeral(true).queue();
+            event.reply("Please select a game using the autocompletion list provided.")
+                    .setEphemeral(true)
+                    .queue();
             return;
         }
 
-        //Make sure that the autocompletion is actually checking the list retrieved
-        //Since the user can mistype and i need to enforce the strict of the autocompletion.
+        // Make sure that the autocompletion is actually checking the list retrieved
+        // Since the user can mistype and i need to enforce the strict of the autocompletion.
         List<PlayTimeEntity> validGames = playTimeService.getGamesPlayedByUser(userId, serverId);
 
         if (validGames.isEmpty()) {
-            event.reply("You haven't played any tracked games in this **server** yet.").setEphemeral(true).queue();
+            event.reply("You haven't played any tracked games in this **server** yet.")
+                    .setEphemeral(true)
+                    .queue();
             return;
         }
-        //checking if the user has played by boolean with using validGames, so we can format it later with totalMinutesOpt.
-        //if not
+
+        // checking if the user has played by boolean with using validGames,
+        // so we can format it later with totalMinutesOpt.
         String finalGameName = gameName;
-        boolean hasPlayed = validGames.stream().anyMatch(entry -> entry.getGameName().equalsIgnoreCase(finalGameName));
+        boolean hasPlayed = validGames.stream()
+                .anyMatch(entry -> entry.getGameName().equalsIgnoreCase(finalGameName));
 
-        String bestMatch = null;
+        // if they haven't played, suggest a best‐match or bail out
         if (!hasPlayed) {
-            //Also adding levenshtein matching for user that writes wrong
+            // Also adding levenshtein matching for user that writes wrong
             LevenshteinDistance levenshtein = new LevenshteinDistance();
-            bestMatch = validGames.stream().map(PlayTimeEntity::getGameName).min(Comparator.comparingInt(name ->
-                    levenshtein.apply(name.toLowerCase(), finalGameName.toLowerCase()))).orElse(null);
-        }
+            String bestMatch = validGames.stream()
+                    .map(PlayTimeEntity::getGameName)
+                    .min(Comparator.comparingInt(name ->
+                            levenshtein.apply(name.toLowerCase(), finalGameName.toLowerCase())))
+                    .orElse(null);
 
-        if (bestMatch != null) {
-            event.reply("You haven't played **" + gameName + "** in this server.\nDid you mean: **" + bestMatch + "**?").setEphemeral(true).queue();
-        } else {
-            event.reply("You haven't played **" + gameName + "** in this server. Please select a game from the list.").setEphemeral(true).queue();
+            if (bestMatch != null) {
+                event.reply("You haven't played **" + gameName + "** in this server.\n" +
+                                "Did you mean **" + bestMatch + "**?")
+                        .setEphemeral(true)
+                        .queue();
+            } else {
+                event.reply("You haven't played **" + gameName + "** in this server. " +
+                                "Please select a game from the list.")
+                        .setEphemeral(true)
+                        .queue();
+            }
             return;
         }
-        //Getting total minutes for how long we have played in our session
-        //THis is a timebuilder
-        Optional<Long> totalMinutesOpt = playTimeService.getTotalMinutesIncludingLive(userId, gameName);
+
+        // Getting total minutes for how long we have played in our session
+        Optional<Long> totalMinutesOpt =
+                playTimeService.getTotalMinutesIncludingLive(userId, gameName);
+
         if (totalMinutesOpt.isPresent()) {
             long totalMinutes = totalMinutesOpt.get();
-            String message = "You have played **" + gameName + "** for a total of **" + formatPlayTime(totalMinutes) + "**";
-            event.reply(message).queue();
+            event.reply("You have played **" + gameName +
+                            "** for a total of **" + formatPlayTime(totalMinutes) + "**")
+                    .queue();
         } else {
-            event.reply("No game or playtime record found for: **" + gameName + "**.").setEphemeral(true).queue();
+            event.reply("No game or playtime record found for **" + gameName + "**.")
+                    .setEphemeral(true)
+                    .queue();
         }
     }
+
 
     // Method and Logic to implement Top 3 players in a single game
     public void replyWithPlaytimeTop3 (SlashCommandInteractionEvent event) {
@@ -117,10 +138,27 @@ public class SlashService {
         //the output will show there are none records for the specific game, and if there is one user there, the leaderboard
         // will display -> so there is no point of keeping this check if the check never goes through. this check could only be valid
         // if I decide to implement later that the leaderboard needs to contain three people in order to show up, if not 3 users then an empty leaderboard.
-
         if(topPlayers.isEmpty()) {
-            event.reply("No users have played **" + gameName + "** in this server").setEphemeral(true).queue();
-            return;
+
+                //get distinct games for leaderboard also -- levenshtein distance
+                List<String> allGames = playTimeService.getMatchingGamesStartingWith("" ,serverId,Integer.MAX_VALUE);
+                LevenshteinDistance lev = new LevenshteinDistance();
+
+                //Closest match to all games
+            String bestMatch = allGames.stream()
+                    .min(Comparator.comparingInt(g ->
+                            lev.apply(g.toLowerCase(), gameName.toLowerCase())))
+                    .orElse(null);
+
+            String reply;
+            if(bestMatch != null && !bestMatch.equalsIgnoreCase(gameName)) {
+                reply = "No one has played **" + gameName + "** on this server yet.\n"
+                        + "Did you mean **" + bestMatch + "**?";
+            } else {
+                reply = "There are **no records** of this game by any user in this **server**";
+            }
+            event.reply(reply).setEphemeral(true).queue();
+                return;
         }
 
         //StringBuilder for leaderboard
