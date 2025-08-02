@@ -4,6 +4,7 @@ import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -188,5 +189,35 @@ public class SlashService {
         //Vertical color change on the embedBuilder.
         embedBuilder.setColor(new Color(0, 0, 0));
         event.replyEmbeds(embedBuilder.build()).queue();
+    }
+
+    //method for finding friends time on the same server
+    public void replyWithFriendTime(SlashCommandInteractionEvent event) {
+        OptionMapping friendOpt = event.getOption("friend");
+        if(friendOpt == null) {
+            event.reply("You must specify a friend to check!").setEphemeral(true).queue();
+            return;
+        }
+        String friendId = friendOpt.getAsUser().getId();
+        String serverId = event.getGuild().getId();
+        String gameName = event.getOption("game").getAsString();
+
+        Optional<Long> friendTime = playTimeService.getFriendTotalMinutes(friendId,gameName,serverId);
+        if(friendTime.isEmpty() || friendTime.get() == 0L){
+            event.reply("No record playtime for friend: <@" + friendId + "> on **" + gameName + "**.")
+                    .setEphemeral(true).queue();
+            return;
+        }
+        long total = friendTime.get();
+        long hours = total / 60;
+        long minutes = total % 60;
+
+        String message = String.format("<@%s> has played **%s** for %d hour%s and %d minute%s.",
+                friendId, gameName,hours, (hours == 1 ? "" : "s"),
+                minutes, (minutes == 1 ? "" : "s")
+                );
+        //reply this message with an event so we don't spam the chat
+        event.reply(message).setEphemeral(true).queue();
+
     }
 }

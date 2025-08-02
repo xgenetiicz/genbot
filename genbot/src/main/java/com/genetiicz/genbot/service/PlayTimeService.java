@@ -4,6 +4,8 @@ import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import com.genetiicz.genbot.database.entity.PlayTimeServerEntity;
 import com.genetiicz.genbot.database.repository.PlayTimeRepository;
 import com.genetiicz.genbot.database.repository.PlayTimeServerRepository;
+import net.dv8tion.jda.api.entities.Message;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -183,5 +185,10 @@ public class PlayTimeService {
     public List<String> getMatchingGamesForUserStartingWith(String input, String serverId, String userId, int limit) {
         return playTimeServerRepository
                 .findDistinctGameNamesByUserIdAndServerIdIgnoreCase(input, serverId, userId, PageRequest.of(0, limit));
+    }
+
+    //Find the friends global playtime for the game - or empty if nothing
+    public Optional<Long> getFriendTotalMinutes (String friendId, String gameName, String serverId) {
+        return playTimeRepository.findByUserIdAndGameNameAndServerId(friendId, gameName,serverId).map(PlayTimeEntity::getTotalMinutesPlayed);
     }
 }

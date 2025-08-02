@@ -57,4 +57,7 @@ public interface PlayTimeRepository extends JpaRepository<PlayTimeEntity, Long> 
             @Param("userId") String userId,
             @Param("serverId") String serverId
     );
+
+    //fetching friend's specific game entry on the server both are in
+    Optional<PlayTimeEntity> findByUserIdAndGameNameAndServerId (String userId, String gameName, String serverId);
 }
