@@ -1,6 +1,7 @@
 package com.genetiicz.genbot.listener;
 
 import com.genetiicz.genbot.service.PlayTimeService;
+import com.genetiicz.genbot.service.VoiceSessionService;
 import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.events.GenericEvent;
 import net.dv8tion.jda.api.events.guild.voice.GuildVoiceUpdateEvent;
@@ -15,6 +16,8 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class GameEventListener extends ListenerAdapter {
     private final PlayTimeService playTimeService;
+    private final VoiceSessionService voiceSessionService;
+    private final VoiceEventListener voiceEventListener;
 
     //Found out that discord is tracking through all servers.
     //the idea is only to track now when they are in voice in the particual server
@@ -22,8 +25,10 @@ public class GameEventListener extends ListenerAdapter {
 
     //Automatically inject tables in PostgreSQL
     @Autowired
-    public GameEventListener(PlayTimeService playTimeService) {
+    public GameEventListener(PlayTimeService playTimeService, VoiceSessionService voiceSessionService, VoiceEventListener voiceEventListener) {
         this.playTimeService = playTimeService;
+        this.voiceSessionService = voiceSessionService;
+        this.voiceEventListener = voiceEventListener;
     }
 
     //Listener "listens" for start activity
@@ -55,6 +60,12 @@ public class GameEventListener extends ListenerAdapter {
                     oldActivities.stream().noneMatch(a ->a.getName().equals(activity.getName()))) {
                 System.out.println("Game detected for: " + userId + " started playing " + activity.getName());
                 playTimeService.handleActivityStart(userId,serverId,serverName,activity.getName());
+
+                //Check also for if the user would be in voice chat on game detection
+                if(voiceEventListener.isUserInVoice(userId,serverId)) {
+                    System.out.println("Voice detection started with GAME detection for: **" + userId + "in **" + serverId + "**.");
+                    voiceSessionService.handleActivityStart(userId,serverId,serverName,activity.getName());
+                }
             }
         }
 
