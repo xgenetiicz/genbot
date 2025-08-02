@@ -2,8 +2,10 @@ package com.genetiicz.genbot;
 
 import com.genetiicz.genbot.listener.GameEventListener;
 import com.genetiicz.genbot.listener.SlashCommandListener;
+import com.genetiicz.genbot.listener.VoiceEventListener;
 import com.genetiicz.genbot.service.PlayTimeService;
 import com.genetiicz.genbot.service.SlashService;
+import com.genetiicz.genbot.service.VoiceSessionService;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
 import net.dv8tion.jda.api.requests.GatewayIntent;
@@ -33,8 +35,8 @@ public class GenBotApplication {
 	//Through bean will i create a JDA instance so the botToken can be used
 	//And we call on our gameEventListener where it communicates with our PlayTimeService.
 	@Bean
-	public GameEventListener gameEventListener(PlayTimeService playTimeService){
-		return new GameEventListener(playTimeService);
+	public GameEventListener gameEventListener(PlayTimeService playTimeService, VoiceSessionService voiceSessionService,VoiceEventListener voiceEventListener){
+		return new GameEventListener(playTimeService,voiceSessionService,voiceEventListener);
 	}
 
 	@Bean
@@ -43,7 +45,13 @@ public class GenBotApplication {
 	}
 
 	@Bean
-	public JDA jda(GameEventListener gameEventListener, SlashCommandListener slashCommandListener) throws InterruptedException {
+	public VoiceEventListener voiceEventListener (VoiceSessionService voiceSessionService) {
+		return new VoiceEventListener(voiceSessionService);
+	}
+
+	@Bean
+	public JDA jda(GameEventListener gameEventListener, SlashCommandListener slashCommandListener,
+				   VoiceEventListener voiceEventListener) throws InterruptedException {
 		JDABuilder builder = JDABuilder.createDefault(botToken);
 		System.out.println("Token is configured and running!");
 
@@ -65,6 +73,7 @@ public class GenBotApplication {
 		// Register the controller class to listen for Discord events
 		builder.addEventListeners(gameEventListener);
 		builder.addEventListeners(slashCommandListener);
+		builder.addEventListeners(voiceEventListener);
 
 		//if statement to see if they actually build correctly.
 		 if(gameEventListener != null) {
@@ -77,6 +86,12 @@ public class GenBotApplication {
 			 System.out.println("slashCommandListener is working as intended.");
 		 } else {
 			 System.out.println("slashCommandListener is not working as intended, failed to build");
+		 }
+
+		 if(voiceEventListener != null) {
+			 System.out.println("voiceEventListener is working as intended.");
+		 } else {
+			 System.out.println("voiceEventListener is not working as intended, failed to build");
 		 }
 
 		// Build the JDA instance and wait for connection.
