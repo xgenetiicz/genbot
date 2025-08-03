@@ -34,7 +34,7 @@ public class SlashCommandRegister {
                 Commands.slash("info", "See a quick overview of all PlayTimeBot commands.")
         ).queue();
 
-        System.out.println("Slash commands 'myplaytime','leaderboard' and 'friendplaytime' is registered!");
+        System.out.println("Slash commands 'myplaytime','leaderboard', 'friendplaytime' and 'info' is registered!");
     }
 
     private OptionData gameOption() {
