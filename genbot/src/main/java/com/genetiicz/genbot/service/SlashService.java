@@ -220,4 +220,36 @@ public class SlashService {
         event.reply(message).setEphemeral(true).queue();
 
     }
+
+    //Info method and build the embed String message for the user
+    public void replyWithInfo(SlashCommandInteractionEvent event) {
+        EmbedBuilder eb = new EmbedBuilder()
+                .setTitle("🤖 PlayTimeBot Commands")
+                .setColor(Color.CYAN)
+                .setDescription("""
+          • `/myplaytime game:<GameName>`  
+            Shows your **global** playtime (persisted + live) for that game—across **all** servers where the bot is present.  
+            • Autocomplete lists **all games you’ve ever played**, no matter the server.
+
+          • `/leaderboard game:<GameName>`  
+            Displays the **top 3 players in this server** for that game.  
+            • Autocomplete lists only games **tracked in this server**.
+
+          • `/friendplaytime friend:@User game:<GameName>`  
+            Shows that user’s playtime **in this server**.  
+            • Autocomplete lists only games **they’ve played here**.
+
+          • `/info`  
+            Shows this help message.
+          """)
+                .addField("Notes", """
+          – Tracking only occurs when Discord reports “<username> is playing <GameName>”.  
+          – Live playtime updates every minute and is added to your total **when you stop** playing.
+          """, false);
+
+        event.replyEmbeds(eb.build())
+                .setEphemeral(true)
+                .queue();
+    }
+
 }
