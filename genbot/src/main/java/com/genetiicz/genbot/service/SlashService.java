@@ -111,6 +111,7 @@ public class SlashService {
             long totalMinutes = totalMinutesOpt.get();
             event.reply("You have played **" + gameName +
                             "** for a total of **" + formatPlayTime(totalMinutes) + "**")
+                    .setEphemeral(true)
                     .queue();
         } else {
             event.reply("No game or playtime record found for **" + gameName + "**.")
