@@ -3,6 +3,7 @@ package com.genetiicz.genbot.commands;
 import jakarta.annotation.PostConstruct;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
+import net.dv8tion.jda.api.interactions.commands.build.CommandData;
 import net.dv8tion.jda.api.interactions.commands.build.Commands;
 import net.dv8tion.jda.api.interactions.commands.build.OptionData;
 import org.springframework.stereotype.Component;
@@ -28,7 +29,9 @@ public class SlashCommandRegister {
 
                 Commands.slash("friendplaytime", "See your friend's global playtime! NB: **Both needs to be on the same server**")
                         .addOption(OptionType.USER, "friend", "Select or type the user", true)
-                        .addOptions(gameOption())
+                        .addOptions(gameOption()),
+
+                Commands.slash("info", "See a quick overview of all PlayTimeBot commands.")
         ).queue();
 
         System.out.println("Slash commands 'myplaytime','leaderboard' and 'friendplaytime' is registered!");

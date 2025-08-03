@@ -43,6 +43,9 @@ public class SlashCommandListener extends ListenerAdapter {
 
         //implementing to check friends game time in the same server.
         handlers.put("friendplaytime", slashService::replyWithFriendTime);
+
+        //info handler
+        handlers.put("info", slashService::replyWithInfo);
     }
 
     @Override
