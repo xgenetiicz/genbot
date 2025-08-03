@@ -87,10 +87,10 @@ public class PlayTimeService {
         long durationMinutes= durationMillis / 60_000;
 
         //We want to track at least one minute over since launching the game is not actually playing.
-        if (durationMinutes < 1) {
-            System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
-            return;
-        }
+       // if (durationMinutes < 1) {
+         //   System.out.println("Session end: User " + userId + " played for less than a minute, not updating.");
+         //   return;
+       // }
         System.out.println("SESSION END: User " + userId + " played " + gameName + " for " + durationMinutes + " minutes. Updating database.");
 
         // Update global total
@@ -123,13 +123,13 @@ public class PlayTimeService {
         }
     }
 
-    @Scheduled(fixedRate = 60_000)
-    public void flushActivePlaySessions() {
-        long now = System.currentTimeMillis();
-        activePlaySessions.replaceAll((key, startTs) ->
-                (now - startTs) >= 60_000 ? now : startTs
-        );
-    }
+   // @Scheduled(fixedRate = 60_000)
+    //public void flushActivePlaySessions() {
+     //   long now = System.currentTimeMillis();
+    // activePlaySessions.replaceAll((key, startTs) ->
+    //          (now - startTs) >= 60_000 ? now : startTs
+    //  );
+   // }
 
     public List<PlayTimeEntity> get3TopPlayersForGame(String gameName, String serverId) {
         return playTimeRepository.findTop3ByGameAndServerMapping(gameName, serverId, PageRequest.of(0,3)); //This mapping will just include leaderboards that have tracking -  and games.
