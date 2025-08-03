@@ -35,6 +35,15 @@ public class SlashCommandRegister {
         ).queue();
 
         System.out.println("Slash commands 'myplaytime','leaderboard', 'friendplaytime' and 'info' is registered!");
+
+        // to retrieve commands to see if new ones are registered. iterates the list of registered commands
+        // where this confirm the command is there - Since Discord can use time to update the command through API
+
+        jda.retrieveCommands().queue(cmds -> {
+            System.out.println("Global commands currently registered:");
+            cmds.forEach(c -> System.out.println("  — " + c.getName()));
+        });
+
     }
 
     private OptionData gameOption() {
