@@ -163,7 +163,7 @@ public class PlayTimeService {
     }
 
     //Find the friends global playtime for the game - or empty if nothing
-    public Optional<Long> getFriendTotalMinutes (String friendId, String gameName, String serverId) {
-        return playTimeRepository.findByUserIdAndGameNameAndServerId(friendId, gameName,serverId).map(PlayTimeEntity::getTotalMinutesPlayed);
+    public Optional<Long> getFriendTotalMinutes (String friendId, String gameName) {
+        return playTimeRepository.findByUserIdAndGameNameIgnoreCase(friendId, gameName).map(PlayTimeEntity::getTotalMinutesPlayed);
     }
 }

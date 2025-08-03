@@ -202,7 +202,7 @@ public class SlashService {
         String serverId = event.getGuild().getId();
         String gameName = event.getOption("game").getAsString();
 
-        Optional<Long> friendTime = playTimeService.getFriendTotalMinutes(friendId,gameName,serverId);
+        Optional<Long> friendTime = playTimeService.getFriendTotalMinutes(friendId,gameName);
         if(friendTime.isEmpty() || friendTime.get() == 0L){
             event.reply("No record playtime for friend: <@" + friendId + "> on **" + gameName + "**.")
                     .setEphemeral(true).queue();
