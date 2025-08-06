@@ -3,6 +3,7 @@ package com.genetiicz.genbot.service;
 import com.genetiicz.genbot.database.entity.PlayTimeEntity;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.entities.Activity;
+import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import org.apache.commons.text.similarity.LevenshteinDistance;
@@ -172,16 +173,25 @@ public class SlashService {
         for (int i = 0; i < topPlayers.size(); i++) {
             PlayTimeEntity entry = topPlayers.get(i);
 
-            //Medals for the places 1,2,3.
-            String medal = i < medals.length ? medals[i] : "`#`" + (i + 1);
+            //Medals for the places 1,2,3.                                  /
+            String medal = i < medals.length ? medals[i] : "`#`" + (i + 1); //Need a fallback so the users can understand if the
+            //user is a console player -  discord doesn't cache their usernames
+            //good enough - need to make users understand so they not see a raw id.
+            Member member = event.getGuild().getMemberById(entry.getUserId());
 
+            //initalize the string
+            String displayName = "";
+            if (member != null) {
+                displayName = member.getEffectiveName();
+            } else {
+                displayName = "Unknown User.. (Console - issue ) (" +  entry.getUserId() + ")";
+            }
             leaderboard.append(medal)
-                    .append("**<@").append(entry.getUserId()).append(">") //Retrieve userId here with <@append.getUser>
+                    .append(" **").append(displayName).append("**: ") //Retrieve userId here with <@append.getUser>
                     //This is how Discord find userName
-                    .append(": ").append(formatPlayTime(entry.getTotalMinutesPlayed()))
+                    .append(formatPlayTime(entry.getTotalMinutesPlayed()))
                     .append("**\n");
-        }
-
+            }
         //EmbedBuilder for setting leaderboard
         EmbedBuilder embedBuilder = new EmbedBuilder();
         embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + gameName);
