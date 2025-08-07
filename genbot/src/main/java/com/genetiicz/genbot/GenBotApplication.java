@@ -5,6 +5,7 @@ import com.genetiicz.genbot.listener.SlashCommandListener;
 import com.genetiicz.genbot.listener.VoiceEventListener;
 import com.genetiicz.genbot.service.PlayTimeService;
 import com.genetiicz.genbot.service.SlashService;
+import com.genetiicz.genbot.service.VoiceAlertProperties;
 import com.genetiicz.genbot.service.VoiceSessionService;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.JDABuilder;
@@ -15,6 +16,7 @@ import net.dv8tion.jda.api.utils.cache.CacheFlag;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -22,6 +24,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling
 @EnableJpaAuditing //
 @SpringBootApplication
+@EnableConfigurationProperties(VoiceAlertProperties.class)
 public class GenBotApplication {
 
 	// Injects the bot token from application.properties
@@ -48,6 +51,8 @@ public class GenBotApplication {
 	public VoiceEventListener voiceEventListener (VoiceSessionService voiceSessionService) {
 		return new VoiceEventListener(voiceSessionService);
 	}
+
+
 
 	@Bean
 	public JDA jda(GameEventListener gameEventListener, SlashCommandListener slashCommandListener,
