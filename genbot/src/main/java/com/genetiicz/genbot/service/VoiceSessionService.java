@@ -108,7 +108,7 @@ public class VoiceSessionService {
             if (mins >= thresholdMinutes) {
                 String laugh = "\uD83D\uDE02";
                 String message = String.format(
-                        "**Bakzuz** ta så slapp av litt, pust litt bruttern hehehehe bare spiller hele dagen.. %s\nDu er jo helt spinnvill <@%s> på **%s**!",laugh,
+                        "**Bro**  pust litt bruttern hehehehe bare spiller hele dagen.. ta deg en luftetur eller noe" + laugh + " %s\nDu er jo helt spinnvill <@%s> på **%s**!",
                         sessions.getUserId(), sessions.getGameName()
                 );
                 if (inWindow) {
