@@ -190,11 +190,14 @@ public class SlashService {
                     .append(" **").append(displayName).append("**: ") //Retrieve userId here with <@append.getUser>
                     //This is how Discord find userName
                     .append(formatPlayTime(entry.getTotalMinutesPlayed()))
-                    .append("**\n");
+                    .append("\n");
+
+            //small check for debugging
+            System.out.println("displayname initalized");
             }
         //EmbedBuilder for setting leaderboard
         EmbedBuilder embedBuilder = new EmbedBuilder();
-        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 Players for " + gameName);
+        embedBuilder.setTitle("\uD83C\uDFC6 Top 3 players in " + gameName);
 
         embedBuilder.setDescription(leaderboard.toString());
         //Vertical color change on the embedBuilder.
